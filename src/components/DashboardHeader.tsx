@@ -1,4 +1,4 @@
-import { LogOut, Download, LogIn } from "lucide-react";
+import { LogOut, Download, LogIn, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DashboardHeaderProps {
@@ -6,36 +6,49 @@ interface DashboardHeaderProps {
   userRole?: string;
   onLogin: () => void;
   onLogout: () => void;
+  onManageHospitals?: () => void;
 }
 
-const DashboardHeader = ({ isLoggedIn, userRole, onLogin, onLogout }: DashboardHeaderProps) => {
+const DashboardHeader = ({ isLoggedIn, userRole, onLogin, onLogout, onManageHospitals }: DashboardHeaderProps) => {
   return (
     <header className="gradient-header px-4 py-4 md:px-8">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">+</span>
+            <div className="h-10 w-auto px-3 rounded-lg bg-primary-foreground flex items-center justify-center">
+              <span className="text-primary font-extrabold text-lg tracking-wide">OKAMED</span>
             </div>
-            <div>
-              <h1 className="text-primary-foreground text-lg md:text-xl font-bold">Painel de Indicadores</h1>
+            <div className="hidden md:block border-l border-primary-foreground/30 h-8 mx-1" />
+            <div className="hidden md:block">
+              <h1 className="text-primary-foreground text-lg font-bold">Painel de Indicadores</h1>
               <p className="text-primary-foreground/70 text-xs">Complexo de Saúde</p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {isLoggedIn && userRole === "admin" && onManageHospitals && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onManageHospitals}
+              className="border-primary-foreground/30 text-primary-foreground bg-primary-foreground/10 hover:bg-primary-foreground/20"
+            >
+              <Settings className="h-4 w-4 mr-1" />
+              <span className="hidden md:inline">Gerenciar</span>
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
             className="border-primary-foreground/30 text-primary-foreground bg-primary-foreground/10 hover:bg-primary-foreground/20"
           >
             <Download className="h-4 w-4 mr-1" />
-            Exportar
+            <span className="hidden md:inline">Exportar</span>
           </Button>
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
-              <span className="text-primary-foreground/80 text-xs hidden md:inline">
+              <span className="text-primary-foreground/80 text-xs hidden lg:inline">
                 {userRole === "admin" ? "Administrador" : "Cliente"}
               </span>
               <Button
