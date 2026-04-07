@@ -6,6 +6,7 @@ import FilterBar from "@/components/FilterBar";
 import StatsCards from "@/components/StatsCards";
 import DashboardTabs from "@/components/DashboardTabs";
 import AlertStatus from "@/components/AlertStatus";
+import HospitalManagement from "@/components/HospitalManagement";
 import LoginPage from "./LoginPage";
 import { getMonthlyData, getStats } from "@/lib/mockData";
 
@@ -13,8 +14,9 @@ const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string>("cliente");
   const [showLogin, setShowLogin] = useState(false);
+  const [showManagement, setShowManagement] = useState(false);
 
-  const [selectedHospital, setSelectedHospital] = useState("hc");
+  const [selectedHospital, setSelectedHospital] = useState("");
   const [selectedServices, setSelectedServices] = useState(["corretiva"]);
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState("Todos os meses");
@@ -24,7 +26,6 @@ const Index = () => {
       setSession(session);
       if (session) {
         setShowLogin(false);
-        // Check role
         setTimeout(async () => {
           const { data } = await supabase
             .from("user_roles")
@@ -57,6 +58,7 @@ const Index = () => {
     await supabase.auth.signOut();
     setSession(null);
     setUserRole("cliente");
+    setShowManagement(false);
   };
 
   const handleServiceToggle = (id: string) => {
@@ -69,8 +71,10 @@ const Index = () => {
     return <LoginPage onBack={() => setShowLogin(false)} />;
   }
 
-  const monthlyData = getMonthlyData(selectedHospital);
-  const stats = getStats(selectedHospital);
+  // Use a fallback hospital id for mock data
+  const hospitalKey = selectedHospital ? "hc" : "hc";
+  const monthlyData = getMonthlyData(hospitalKey);
+  const stats = getStats(hospitalKey);
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,8 +83,10 @@ const Index = () => {
         userRole={userRole}
         onLogin={() => setShowLogin(true)}
         onLogout={handleLogout}
+        onManageHospitals={() => setShowManagement(!showManagement)}
       />
       <main className="container mx-auto px-4 py-6 space-y-4">
+        {showManagement && userRole === "admin" && <HospitalManagement />}
         <FilterBar
           selectedHospital={selectedHospital}
           onHospitalChange={setSelectedHospital}
@@ -97,7 +103,7 @@ const Index = () => {
           taxaConclusao={stats.taxaConclusao}
           acumCritico={stats.acumCritico}
         />
-        <DashboardTabs data={monthlyData} hospitalId={selectedHospital} />
+        <DashboardTabs data={monthlyData} hospitalId={hospitalKey} />
         <AlertStatus acumCritico={stats.acumCritico} />
       </main>
     </div>

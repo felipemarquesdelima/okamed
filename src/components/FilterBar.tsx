@@ -1,4 +1,6 @@
-import { hospitals, serviceTypes } from "@/lib/mockData";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { serviceTypes } from "@/lib/mockData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Building2, Wrench, Calendar, Settings, Zap } from "lucide-react";
@@ -32,6 +34,15 @@ const FilterBar = ({
   selectedYear, onYearChange,
   selectedMonth, onMonthChange,
 }: FilterBarProps) => {
+  const { data: hospitals = [] } = useQuery({
+    queryKey: ["hospitals"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("hospitals").select("*").eq("active", true).order("short_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
     <div className="bg-card rounded-xl p-4 md:p-6 stat-card-shadow">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -50,7 +61,7 @@ const FilterBar = ({
                 <SelectItem key={h.id} value={h.id}>
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-primary" />
-                    {h.name} ({h.shortName})
+                    {h.name} ({h.short_name})
                   </div>
                 </SelectItem>
               ))}
