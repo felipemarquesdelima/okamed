@@ -6,7 +6,7 @@ import FilterBar from "@/components/FilterBar";
 import StatsCards from "@/components/StatsCards";
 import DashboardTabs from "@/components/DashboardTabs";
 import AlertStatus from "@/components/AlertStatus";
-import HospitalManagement from "@/components/HospitalManagement";
+import AdminPanel from "@/components/AdminPanel";
 import LoginPage from "./LoginPage";
 import { getMonthlyData, getStats } from "@/lib/mockData";
 
