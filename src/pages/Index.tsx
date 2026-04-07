@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -8,7 +9,9 @@ import DashboardTabs from "@/components/DashboardTabs";
 import AlertStatus from "@/components/AlertStatus";
 import AdminPanel from "@/components/AdminPanel";
 import LoginPage from "./LoginPage";
-import { getMonthlyData, getStats } from "@/lib/mockData";
+import { MonthlyData, getMonthlyData, getStats } from "@/lib/mockData";
+
+const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -54,6 +57,26 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Fetch real OS data from database
+  const { data: dbOrders = [] } = useQuery({
+    queryKey: ["service_orders_dashboard", selectedHospital, selectedYear, selectedServices],
+    queryFn: async () => {
+      let query = supabase
+        .from("service_orders")
+        .select("*")
+        .eq("year", selectedYear);
+      if (selectedHospital) {
+        query = query.eq("hospital_id", selectedHospital);
+      }
+      if (selectedServices.length > 0) {
+        query = query.in("service_type", selectedServices);
+      }
+      const { data, error } = await query.order("month");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -71,10 +94,37 @@ const Index = () => {
     return <LoginPage onBack={() => setShowLogin(false)} />;
   }
 
-  // Use a fallback hospital id for mock data
-  const hospitalKey = selectedHospital ? "hc" : "hc";
-  const monthlyData = getMonthlyData(hospitalKey);
-  const stats = getStats(hospitalKey);
+  // Build monthly data from DB orders, grouped by month
+  const monthlyData: MonthlyData[] = MONTHS.map((monthName, i) => {
+    const monthOrders = dbOrders.filter((o: any) => o.month === i + 1);
+    if (monthOrders.length === 0) {
+      return {
+        month: monthName,
+        osAbertas: 0,
+        osFinalizadas: 0,
+        percentual: 0,
+        meta: 90,
+        acumCritico: 0,
+        acumGeral: 0,
+        analiseCritica: "—",
+      };
+    }
+    const osAbertas = monthOrders.reduce((s: number, o: any) => s + o.os_abertas, 0);
+    const osFinalizadas = monthOrders.reduce((s: number, o: any) => s + o.os_finalizadas, 0);
+    const acumCritico = monthOrders.reduce((s: number, o: any) => s + o.acum_critico, 0);
+    const acumGeral = monthOrders.reduce((s: number, o: any) => s + o.acum_geral, 0);
+    const meta = Number(monthOrders[0]?.meta || 90);
+    const percentual = osAbertas > 0 ? Math.round((osFinalizadas / osAbertas) * 1000) / 10 : 0;
+    const analiseCritica = monthOrders.map((o: any) => o.analise_critica).filter((a: string) => a && a !== "—").join(" | ") || "—";
+    return { month: monthName, osAbertas, osFinalizadas, percentual, meta, acumCritico, acumGeral, analiseCritica };
+  });
+
+  const activeMonths = monthlyData.filter(d => d.osAbertas > 0);
+  const totalAbertas = activeMonths.reduce((s, d) => s + d.osAbertas, 0);
+  const totalFinalizadas = activeMonths.reduce((s, d) => s + d.osFinalizadas, 0);
+  const taxaConclusao = totalAbertas > 0 ? Math.round((totalFinalizadas / totalAbertas) * 1000) / 10 : 0;
+  const acumCritico = activeMonths.reduce((s, d) => s + d.acumCritico, 0);
+  const stats = { totalAbertas, totalFinalizadas, taxaConclusao, acumCritico };
 
   return (
     <div className="min-h-screen bg-background">
@@ -103,7 +153,7 @@ const Index = () => {
           taxaConclusao={stats.taxaConclusao}
           acumCritico={stats.acumCritico}
         />
-        <DashboardTabs data={monthlyData} hospitalId={hospitalKey} />
+        <DashboardTabs data={monthlyData} hospitalId={selectedHospital || "all"} />
         <AlertStatus acumCritico={stats.acumCritico} />
       </main>
     </div>
