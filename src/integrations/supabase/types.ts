@@ -41,6 +41,62 @@ export type Database = {
         }
         Relationships: []
       }
+      service_orders: {
+        Row: {
+          acum_critico: number
+          acum_geral: number
+          analise_critica: string | null
+          created_at: string
+          hospital_id: string
+          id: string
+          meta: number
+          month: number
+          os_abertas: number
+          os_finalizadas: number
+          service_type: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          acum_critico?: number
+          acum_geral?: number
+          analise_critica?: string | null
+          created_at?: string
+          hospital_id: string
+          id?: string
+          meta?: number
+          month: number
+          os_abertas?: number
+          os_finalizadas?: number
+          service_type?: string
+          updated_at?: string
+          year?: number
+        }
+        Update: {
+          acum_critico?: number
+          acum_geral?: number
+          analise_critica?: string | null
+          created_at?: string
+          hospital_id?: string
+          id?: string
+          meta?: number
+          month?: number
+          os_abertas?: number
+          os_finalizadas?: number
+          service_type?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_orders_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
