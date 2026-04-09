@@ -19,7 +19,7 @@ const Index = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showManagement, setShowManagement] = useState(false);
 
-  const [selectedHospital, setSelectedHospital] = useState("");
+  const [selectedHospital, setSelectedHospital] = useState("all");
   const [selectedServices, setSelectedServices] = useState(["corretiva"]);
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState("Todos os meses");
@@ -65,7 +65,7 @@ const Index = () => {
         .from("service_orders")
         .select("*")
         .eq("year", selectedYear);
-      if (selectedHospital) {
+      if (selectedHospital && selectedHospital !== "all") {
         query = query.eq("hospital_id", selectedHospital);
       }
       if (selectedServices.length > 0) {
