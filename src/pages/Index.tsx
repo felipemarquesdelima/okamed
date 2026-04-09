@@ -65,7 +65,7 @@ const Index = () => {
         .from("service_orders")
         .select("*")
         .eq("year", selectedYear);
-      if (selectedHospital) {
+      if (selectedHospital && selectedHospital !== "all") {
         query = query.eq("hospital_id", selectedHospital);
       }
       if (selectedServices.length > 0) {
