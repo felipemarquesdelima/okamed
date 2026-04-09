@@ -57,6 +57,12 @@ const FilterBar = ({
               </div>
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  Geral (Todos os Hospitais)
+                </div>
+              </SelectItem>
               {hospitals.map((h) => (
                 <SelectItem key={h.id} value={h.id}>
                   <div className="flex items-center gap-2">
