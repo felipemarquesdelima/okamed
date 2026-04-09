@@ -19,7 +19,7 @@ const Index = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showManagement, setShowManagement] = useState(false);
 
-  const [selectedHospital, setSelectedHospital] = useState("");
+  const [selectedHospital, setSelectedHospital] = useState("all");
   const [selectedServices, setSelectedServices] = useState(["corretiva"]);
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState("Todos os meses");
