@@ -4,7 +4,11 @@ import HospitalManagement from "./HospitalManagement";
 import ServiceOrderManagement from "./ServiceOrderManagement";
 import UserManagement from "./UserManagement";
 
-const AdminPanel = () => {
+interface AdminPanelProps {
+  userRole?: string;
+}
+
+const AdminPanel = ({ userRole = "admin" }: AdminPanelProps) => {
   return (
     <div className="bg-card rounded-xl p-5 stat-card-shadow">
       <Tabs defaultValue="hospitals" className="w-full">
