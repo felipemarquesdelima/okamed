@@ -39,7 +39,7 @@ const AdminPanel = ({ userRole = "admin" }: AdminPanelProps) => {
           </TabsContent>
         )}
         <TabsContent value="os-data">
-          <ServiceOrderManagement />
+          <ServiceOrderManagement userRole={userRole} />
         </TabsContent>
         {isAdmin && (
           <TabsContent value="users">
