@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,12 @@ const SERVICE_TYPES = [
   { id: "eletrica", label: "Teste de Segurança Elétrica" },
 ];
 
-const ServiceOrderManagement = () => {
+interface ServiceOrderManagementProps {
+  userRole?: string;
+}
+
+const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementProps) => {
+  const isController = userRole === "controlador";
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [hospitalId, setHospitalId] = useState("");
@@ -32,38 +37,93 @@ const ServiceOrderManagement = () => {
   const [acumCritico, setAcumCritico] = useState(0);
   const [acumGeral, setAcumGeral] = useState(0);
   const [analiseCritica, setAnaliseCritica] = useState("—");
-
   const [filterHospital, setFilterHospital] = useState("all");
   const [filterYear, setFilterYear] = useState(2026);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: hospitals = [] } = useQuery({
-    queryKey: ["hospitals"],
+  const { data: currentAssignment, isLoading: isLoadingAssignment } = useQuery({
+    queryKey: ["current_hospital_assignment", isController],
+    enabled: isController,
     queryFn: async () => {
-      const { data, error } = await supabase.from("hospitals").select("*").eq("active", true).order("name");
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      const user = authData.user;
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from("user_hospital_assignments")
+        .select("hospital_id, hospitals(name, short_name)")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ["service_orders", filterHospital, filterYear],
+  const assignedHospitalId = isController ? currentAssignment?.hospital_id ?? "" : "";
+  const assignedHospitalLabel = isController && currentAssignment?.hospitals
+    ? `${currentAssignment.hospitals.short_name} - ${currentAssignment.hospitals.name}`
+    : "";
+
+  useEffect(() => {
+    if (isController && assignedHospitalId) {
+      setHospitalId(assignedHospitalId);
+      setFilterHospital(assignedHospitalId);
+    }
+  }, [isController, assignedHospitalId]);
+
+  const { data: hospitals = [] } = useQuery({
+    queryKey: ["hospitals", assignedHospitalId, isController],
+    enabled: !isController || !!assignedHospitalId,
     queryFn: async () => {
+      let query = supabase.from("hospitals").select("*").eq("active", true).order("name");
+      if (isController && assignedHospitalId) {
+        query = query.eq("id", assignedHospitalId);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ["service_orders", filterHospital, filterYear, assignedHospitalId, isController],
+    enabled: !isController || !!assignedHospitalId,
+    queryFn: async () => {
+      const effectiveHospital = isController ? assignedHospitalId : filterHospital;
       let query = supabase
         .from("service_orders")
         .select("*, hospitals(name, short_name)")
         .eq("year", filterYear)
         .order("month");
-      if (filterHospital !== "all") {
-        query = query.eq("hospital_id", filterHospital);
+
+      if (effectiveHospital && effectiveHospital !== "all") {
+        query = query.eq("hospital_id", effectiveHospital);
       }
+
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
+
+  const resetForm = () => {
+    setEditId(null);
+    setHospitalId(isController ? assignedHospitalId : "");
+    setYear(2026);
+    setMonth(1);
+    setServiceType("corretiva");
+    setOsAbertas(0);
+    setOsFinalizadas(0);
+    setMeta(90);
+    setAcumCritico(0);
+    setAcumGeral(0);
+    setAnaliseCritica("—");
+    setOpen(false);
+  };
 
   const upsertMutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -96,24 +156,9 @@ const ServiceOrderManagement = () => {
     onError: (err: any) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
   });
 
-  const resetForm = () => {
-    setEditId(null);
-    setHospitalId("");
-    setYear(2026);
-    setMonth(1);
-    setServiceType("corretiva");
-    setOsAbertas(0);
-    setOsFinalizadas(0);
-    setMeta(90);
-    setAcumCritico(0);
-    setAcumGeral(0);
-    setAnaliseCritica("—");
-    setOpen(false);
-  };
-
   const handleEdit = (order: any) => {
     setEditId(order.id);
-    setHospitalId(order.hospital_id);
+    setHospitalId(isController ? assignedHospitalId : order.hospital_id);
     setYear(order.year);
     setMonth(order.month);
     setServiceType(order.service_type);
@@ -128,8 +173,9 @@ const ServiceOrderManagement = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const effectiveHospitalId = isController ? assignedHospitalId : hospitalId;
     const payload: any = {
-      hospital_id: hospitalId,
+      hospital_id: effectiveHospitalId,
       year,
       month,
       service_type: serviceType,
@@ -145,6 +191,11 @@ const ServiceOrderManagement = () => {
   };
 
   const percentual = osAbertas > 0 ? ((osFinalizadas / osAbertas) * 100).toFixed(1) : "0.0";
+  const canSubmit = isController ? !!assignedHospitalId : !!hospitalId;
+
+  if (isController && !isLoadingAssignment && !assignedHospitalId) {
+    return <p className="text-sm text-muted-foreground">Sua conta não possui hospital atribuído.</p>;
+  }
 
   return (
     <div>
@@ -167,16 +218,20 @@ const ServiceOrderManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
                   <Label>Hospital</Label>
-                  <Select value={hospitalId} onValueChange={setHospitalId} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {hospitals.map((h) => (
-                        <SelectItem key={h.id} value={h.id}>{h.short_name} - {h.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isController ? (
+                    <Input value={assignedHospitalLabel} disabled className="bg-muted" />
+                  ) : (
+                    <Select value={hospitalId} onValueChange={setHospitalId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hospitals.map((h) => (
+                          <SelectItem key={h.id} value={h.id}>{h.short_name} - {h.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Ano</Label>
@@ -239,7 +294,7 @@ const ServiceOrderManagement = () => {
               </div>
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={resetForm}>Cancelar</Button>
-                <Button type="submit" disabled={upsertMutation.isPending || !hospitalId}>
+                <Button type="submit" disabled={upsertMutation.isPending || !canSubmit}>
                   {upsertMutation.isPending ? "Salvando..." : "Salvar"}
                 </Button>
               </div>
@@ -248,27 +303,32 @@ const ServiceOrderManagement = () => {
         </Dialog>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-3 mb-4 flex-wrap">
-        <div className="w-48">
-          <Select value={filterHospital} onValueChange={setFilterHospital}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar hospital" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Hospitais</SelectItem>
-              {hospitals.map((h) => (
-                <SelectItem key={h.id} value={h.id}>{h.short_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {isController ? (
+          <div className="w-72">
+            <Input value={assignedHospitalLabel} disabled className="bg-muted" />
+          </div>
+        ) : (
+          <div className="w-48">
+            <Select value={filterHospital} onValueChange={setFilterHospital}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar hospital" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Hospitais</SelectItem>
+                {hospitals.map((h) => (
+                  <SelectItem key={h.id} value={h.id}>{h.short_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="w-28">
           <Input type="number" value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))} />
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoading || isLoadingAssignment ? (
         <p className="text-muted-foreground text-sm">Carregando...</p>
       ) : orders.length === 0 ? (
         <p className="text-muted-foreground text-sm">Nenhuma OS cadastrada para os filtros selecionados.</p>
@@ -294,7 +354,7 @@ const ServiceOrderManagement = () => {
                   <TableRow key={o.id}>
                     <TableCell className="font-semibold">{o.hospitals?.short_name || "—"}</TableCell>
                     <TableCell>{MONTHS[o.month - 1]}</TableCell>
-                    <TableCell className="text-xs">{SERVICE_TYPES.find(s => s.id === o.service_type)?.label || o.service_type}</TableCell>
+                    <TableCell className="text-xs">{SERVICE_TYPES.find((s) => s.id === o.service_type)?.label || o.service_type}</TableCell>
                     <TableCell className="text-right">{o.os_abertas}</TableCell>
                     <TableCell className="text-right">{o.os_finalizadas}</TableCell>
                     <TableCell className="text-right">{pct}%</TableCell>
