@@ -27,7 +27,7 @@ const DashboardHeader = ({ isLoggedIn, userRole, onLogin, onLogout, onManageHosp
         </div>
 
         <div className="flex items-center gap-2">
-          {isLoggedIn && userRole === "admin" && onManageHospitals && (
+          {isLoggedIn && (userRole === "admin" || userRole === "controlador") && onManageHospitals && (
             <Button
               variant="outline"
               size="sm"
@@ -49,7 +49,7 @@ const DashboardHeader = ({ isLoggedIn, userRole, onLogin, onLogout, onManageHosp
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <span className="text-primary-foreground/80 text-xs hidden lg:inline">
-                {userRole === "admin" ? "Administrador" : "Cliente"}
+                {userRole === "admin" ? "Administrador" : userRole === "controlador" ? "Controlador" : "Visualizador"}
               </span>
               <Button
                 variant="outline"
