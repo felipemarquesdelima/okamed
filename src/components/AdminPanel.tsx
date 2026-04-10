@@ -9,32 +9,43 @@ interface AdminPanelProps {
 }
 
 const AdminPanel = ({ userRole = "admin" }: AdminPanelProps) => {
+  const isAdmin = userRole === "admin";
+  const defaultTab = isAdmin ? "hospitals" : "os-data";
+
   return (
     <div className="bg-card rounded-xl p-5 stat-card-shadow">
-      <Tabs defaultValue="hospitals" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="hospitals" className="gap-1.5">
-            <Building2 className="h-4 w-4" />
-            Hospitais
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="hospitals" className="gap-1.5">
+              <Building2 className="h-4 w-4" />
+              Hospitais
+            </TabsTrigger>
+          )}
           <TabsTrigger value="os-data" className="gap-1.5">
             <ClipboardList className="h-4 w-4" />
             Dados de OS
           </TabsTrigger>
-          <TabsTrigger value="users" className="gap-1.5">
-            <Users className="h-4 w-4" />
-            Usuários
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="users" className="gap-1.5">
+              <Users className="h-4 w-4" />
+              Usuários
+            </TabsTrigger>
+          )}
         </TabsList>
-        <TabsContent value="hospitals">
-          <HospitalManagement />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="hospitals">
+            <HospitalManagement />
+          </TabsContent>
+        )}
         <TabsContent value="os-data">
           <ServiceOrderManagement />
         </TabsContent>
-        <TabsContent value="users">
-          <UserManagement />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="users">
+            <UserManagement />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
