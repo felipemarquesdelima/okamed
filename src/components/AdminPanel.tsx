@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, ClipboardList } from "lucide-react";
+import { Building2, ClipboardList, Users } from "lucide-react";
 import HospitalManagement from "./HospitalManagement";
 import ServiceOrderManagement from "./ServiceOrderManagement";
+import UserManagement from "./UserManagement";
 
 const AdminPanel = () => {
   return (
