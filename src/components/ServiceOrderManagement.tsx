@@ -221,20 +221,16 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
                   <Label>Hospital</Label>
-                  {isController ? (
-                    <Input value={assignedHospitalLabel} disabled className="bg-muted" />
-                  ) : (
-                    <Select value={hospitalId} onValueChange={setHospitalId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {hospitals.map((h) => (
-                          <SelectItem key={h.id} value={h.id}>{h.short_name} - {h.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Select value={hospitalId} onValueChange={setHospitalId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hospitals.map((h) => (
+                        <SelectItem key={h.id} value={h.id}>{h.short_name} - {h.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Ano</Label>
