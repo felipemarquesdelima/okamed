@@ -92,18 +92,19 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
   });
 
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ["service_orders", filterHospital, filterYear, assignedHospitalId, isController],
-    enabled: !isController || !!assignedHospitalId,
+    queryKey: ["service_orders", filterHospital, filterYear, assignedHospitalIds.join(","), isController],
+    enabled: !isController || hasAssignments,
     queryFn: async () => {
-      const effectiveHospital = isController ? assignedHospitalId : filterHospital;
       let query = supabase
         .from("service_orders")
         .select("*, hospitals(name, short_name)")
         .eq("year", filterYear)
         .order("month");
 
-      if (effectiveHospital && effectiveHospital !== "all") {
-        query = query.eq("hospital_id", effectiveHospital);
+      if (filterHospital && filterHospital !== "all") {
+        query = query.eq("hospital_id", filterHospital);
+      } else if (isController && assignedHospitalIds.length > 0) {
+        query = query.in("hospital_id", assignedHospitalIds);
       }
 
       const { data, error } = await query;
@@ -114,7 +115,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
 
   const resetForm = () => {
     setEditId(null);
-    setHospitalId(isController ? assignedHospitalId : "");
+    setHospitalId(isController && assignedHospitalIds.length > 0 ? assignedHospitalIds[0] : "");
     setYear(2026);
     setMonth(1);
     setServiceType("corretiva");
@@ -160,7 +161,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
 
   const handleEdit = (order: any) => {
     setEditId(order.id);
-    setHospitalId(isController ? assignedHospitalId : order.hospital_id);
+    setHospitalId(order.hospital_id);
     setYear(order.year);
     setMonth(order.month);
     setServiceType(order.service_type);
@@ -175,9 +176,8 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const effectiveHospitalId = isController ? assignedHospitalId : hospitalId;
     const payload: any = {
-      hospital_id: effectiveHospitalId,
+      hospital_id: hospitalId,
       year,
       month,
       service_type: serviceType,
@@ -193,11 +193,12 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
   };
 
   const percentual = osAbertas > 0 ? ((osFinalizadas / osAbertas) * 100).toFixed(1) : "0.0";
-  const canSubmit = isController ? !!assignedHospitalId : !!hospitalId;
+  const canSubmit = !!hospitalId;
 
-  if (isController && !isLoadingAssignment && !assignedHospitalId) {
+  if (isController && !isLoadingAssignment && assignedHospitalIds.length === 0) {
     return <p className="text-sm text-muted-foreground">Sua conta não possui hospital atribuído.</p>;
   }
+
 
   return (
     <div>
