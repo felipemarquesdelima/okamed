@@ -5,11 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 
 const UserManagement = () => {
   const { toast } = useToast();
@@ -19,7 +20,7 @@ const UserManagement = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<string>("cliente");
-  const [hospitalId, setHospitalId] = useState<string>("");
+  const [hospitalIds, setHospitalIds] = useState<string[]>([]);
 
   const { data: hospitals = [] } = useQuery({
     queryKey: ["hospitals"],
@@ -37,24 +38,25 @@ const UserManagement = () => {
 
       const userIds = profiles.map((p) => p.user_id);
       const { data: roles } = await supabase.from("user_roles").select("*").in("user_id", userIds);
-      const { data: assignments } = await supabase.from("user_hospital_assignments").select("*, hospitals(short_name, name)").in("user_id", userIds);
+      const { data: assignments } = await supabase
+        .from("user_hospital_assignments")
+        .select("*, hospitals(short_name, name)")
+        .in("user_id", userIds);
 
       return profiles.map((p) => ({
         ...p,
         role: roles?.find((r) => r.user_id === p.user_id)?.role || "cliente",
-        hospital: assignments?.find((a) => a.user_id === p.user_id),
+        hospitals: assignments?.filter((a) => a.user_id === p.user_id) || [],
       }));
     },
   });
 
   const createUserMutation = useMutation({
-    mutationFn: async (payload: { email: string; password: string; full_name: string; role: string; hospital_id?: string }) => {
+    mutationFn: async (payload: { email: string; password: string; full_name: string; role: string; hospital_ids?: string[] }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
 
-      const res = await supabase.functions.invoke("create-user", {
-        body: payload,
-      });
+      const res = await supabase.functions.invoke("create-user", { body: payload });
 
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
@@ -76,17 +78,25 @@ const UserManagement = () => {
     setPassword("");
     setFullName("");
     setRole("cliente");
-    setHospitalId("");
+    setHospitalIds([]);
+  };
+
+  const toggleHospital = (id: string) => {
+    setHospitalIds((prev) => (prev.includes(id) ? prev.filter((h) => h !== id) : [...prev, id]));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (role === "controlador" && hospitalIds.length === 0) {
+      toast({ title: "Selecione pelo menos um hospital", variant: "destructive" });
+      return;
+    }
     createUserMutation.mutate({
       email,
       password,
       full_name: fullName,
       role,
-      hospital_id: role === "controlador" ? hospitalId : undefined,
+      hospital_ids: role === "controlador" ? hospitalIds : undefined,
     });
   };
 
@@ -110,7 +120,7 @@ const UserManagement = () => {
               <Plus className="h-4 w-4" /> Novo Usuário
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Criar novo usuário</DialogTitle>
             </DialogHeader>
@@ -139,15 +149,23 @@ const UserManagement = () => {
               </div>
               {role === "controlador" && (
                 <div>
-                  <Label>Hospital atribuído *</Label>
-                  <Select value={hospitalId} onValueChange={setHospitalId}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o hospital" /></SelectTrigger>
-                    <SelectContent>
-                      {hospitals.map((h) => (
-                        <SelectItem key={h.id} value={h.id}>{h.short_name} - {h.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Hospitais atribuídos *</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Selecione um ou mais hospitais</p>
+                  <div className="border rounded-md p-3 max-h-56 overflow-y-auto space-y-2">
+                    {hospitals.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhum hospital cadastrado</p>
+                    ) : (
+                      hospitals.map((h) => (
+                        <label key={h.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                          <Checkbox
+                            checked={hospitalIds.includes(h.id)}
+                            onCheckedChange={() => toggleHospital(h.id)}
+                          />
+                          <span>{h.short_name} - {h.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
               <Button type="submit" className="w-full" disabled={createUserMutation.isPending}>
@@ -164,7 +182,7 @@ const UserManagement = () => {
             <TableHead>Nome</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Perfil</TableHead>
-            <TableHead>Hospital</TableHead>
+            <TableHead>Hospitais</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -179,9 +197,17 @@ const UserManagement = () => {
                 <TableCell>{u.email}</TableCell>
                 <TableCell>{roleBadge(u.role)}</TableCell>
                 <TableCell>
-                  {u.hospital?.hospitals
-                    ? `${u.hospital.hospitals.short_name} - ${u.hospital.hospitals.name}`
-                    : "—"}
+                  {u.hospitals.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {u.hospitals.map((a: any) => (
+                        <Badge key={a.id} variant="outline" className="text-xs">
+                          {a.hospitals?.short_name || "—"}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    "—"
+                  )}
                 </TableCell>
               </TableRow>
             ))
