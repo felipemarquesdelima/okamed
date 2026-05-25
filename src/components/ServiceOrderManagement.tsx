@@ -43,45 +43,47 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: currentAssignment, isLoading: isLoadingAssignment } = useQuery({
-    queryKey: ["current_hospital_assignment", isController],
+  const { data: assignedHospitals = [], isLoading: isLoadingAssignment } = useQuery({
+    queryKey: ["current_hospital_assignments", isController],
     enabled: isController,
     queryFn: async () => {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError) throw authError;
       const user = authData.user;
-      if (!user) return null;
+      if (!user) return [];
 
       const { data, error } = await supabase
         .from("user_hospital_assignments")
-        .select("hospital_id, hospitals(name, short_name)")
-        .eq("user_id", user.id)
-        .maybeSingle();
+        .select("hospital_id, hospitals(id, name, short_name)")
+        .eq("user_id", user.id);
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
-  const assignedHospitalId = isController ? currentAssignment?.hospital_id ?? "" : "";
-  const assignedHospitalLabel = isController && currentAssignment?.hospitals
-    ? `${currentAssignment.hospitals.short_name} - ${currentAssignment.hospitals.name}`
-    : "";
+  const assignedHospitalIds = isController ? assignedHospitals.map((a: any) => a.hospital_id) : [];
+  const hasAssignments = !isController || assignedHospitalIds.length > 0;
 
   useEffect(() => {
-    if (isController && assignedHospitalId) {
-      setHospitalId(assignedHospitalId);
-      setFilterHospital(assignedHospitalId);
+    if (isController && assignedHospitalIds.length > 0) {
+      if (!hospitalId || !assignedHospitalIds.includes(hospitalId)) {
+        setHospitalId(assignedHospitalIds[0]);
+      }
+      if (filterHospital !== "all" && !assignedHospitalIds.includes(filterHospital)) {
+        setFilterHospital(assignedHospitalIds.length === 1 ? assignedHospitalIds[0] : "all");
+      }
     }
-  }, [isController, assignedHospitalId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isController, assignedHospitals.length]);
 
   const { data: hospitals = [] } = useQuery({
-    queryKey: ["hospitals", assignedHospitalId, isController],
-    enabled: !isController || !!assignedHospitalId,
+    queryKey: ["hospitals", assignedHospitalIds.join(","), isController],
+    enabled: !isController || hasAssignments,
     queryFn: async () => {
       let query = supabase.from("hospitals").select("*").eq("active", true).order("name");
-      if (isController && assignedHospitalId) {
-        query = query.eq("id", assignedHospitalId);
+      if (isController && assignedHospitalIds.length > 0) {
+        query = query.in("id", assignedHospitalIds);
       }
       const { data, error } = await query;
       if (error) throw error;
