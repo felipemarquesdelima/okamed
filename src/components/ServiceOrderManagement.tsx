@@ -303,25 +303,19 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
       </div>
 
       <div className="flex gap-3 mb-4 flex-wrap">
-        {isController ? (
-          <div className="w-72">
-            <Input value={assignedHospitalLabel} disabled className="bg-muted" />
-          </div>
-        ) : (
-          <div className="w-48">
-            <Select value={filterHospital} onValueChange={setFilterHospital}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar hospital" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Hospitais</SelectItem>
-                {hospitals.map((h) => (
-                  <SelectItem key={h.id} value={h.id}>{h.short_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <div className="w-56">
+          <Select value={filterHospital} onValueChange={setFilterHospital}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar hospital" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isController ? "Todos os meus hospitais" : "Todos os Hospitais"}</SelectItem>
+              {hospitals.map((h) => (
+                <SelectItem key={h.id} value={h.id}>{h.short_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="w-28">
           <Input type="number" value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))} />
         </div>
