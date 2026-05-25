@@ -12,7 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify the caller is an admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
@@ -25,7 +24,6 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify caller is admin using their JWT
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -37,7 +35,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
     const { data: roleData } = await adminClient
       .from("user_roles")
@@ -53,7 +50,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { email, password, full_name, role, hospital_id } = await req.json();
+    const body = await req.json();
+    const { email, password, full_name, role } = body;
+    // Accept either hospital_ids (array) or hospital_id (single, legacy)
+    const hospitalIds: string[] = Array.isArray(body.hospital_ids)
+      ? body.hospital_ids.filter((x: unknown) => typeof x === "string" && x.length > 0)
+      : body.hospital_id ? [body.hospital_id] : [];
 
     if (!email || !password || !role) {
       return new Response(JSON.stringify({ error: "Email, senha e perfil são obrigatórios" }), {
@@ -69,14 +71,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (role === "controlador" && !hospital_id) {
-      return new Response(JSON.stringify({ error: "Controlador precisa de um hospital atribuído" }), {
+    if (role === "controlador" && hospitalIds.length === 0) {
+      return new Response(JSON.stringify({ error: "Controlador precisa de pelo menos um hospital atribuído" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Create user with service role
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -92,7 +93,6 @@ Deno.serve(async (req) => {
 
     const userId = newUser.user.id;
 
-    // Update user role (trigger creates 'cliente' by default)
     if (role !== "cliente") {
       await adminClient
         .from("user_roles")
@@ -100,19 +100,15 @@ Deno.serve(async (req) => {
         .eq("user_id", userId);
     }
 
-    // Create profile
     await adminClient.from("profiles").insert({
       user_id: userId,
       email,
       full_name: full_name || null,
     });
 
-    // Assign hospital if controlador
-    if (role === "controlador" && hospital_id) {
-      await adminClient.from("user_hospital_assignments").insert({
-        user_id: userId,
-        hospital_id,
-      });
+    if (role === "controlador" && hospitalIds.length > 0) {
+      const rows = hospitalIds.map((hid) => ({ user_id: userId, hospital_id: hid }));
+      await adminClient.from("user_hospital_assignments").insert(rows);
     }
 
     return new Response(
@@ -123,7 +119,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

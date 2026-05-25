@@ -43,45 +43,47 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: currentAssignment, isLoading: isLoadingAssignment } = useQuery({
-    queryKey: ["current_hospital_assignment", isController],
+  const { data: assignedHospitals = [], isLoading: isLoadingAssignment } = useQuery({
+    queryKey: ["current_hospital_assignments", isController],
     enabled: isController,
     queryFn: async () => {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError) throw authError;
       const user = authData.user;
-      if (!user) return null;
+      if (!user) return [];
 
       const { data, error } = await supabase
         .from("user_hospital_assignments")
-        .select("hospital_id, hospitals(name, short_name)")
-        .eq("user_id", user.id)
-        .maybeSingle();
+        .select("hospital_id, hospitals(id, name, short_name)")
+        .eq("user_id", user.id);
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
-  const assignedHospitalId = isController ? currentAssignment?.hospital_id ?? "" : "";
-  const assignedHospitalLabel = isController && currentAssignment?.hospitals
-    ? `${currentAssignment.hospitals.short_name} - ${currentAssignment.hospitals.name}`
-    : "";
+  const assignedHospitalIds = isController ? assignedHospitals.map((a: any) => a.hospital_id) : [];
+  const hasAssignments = !isController || assignedHospitalIds.length > 0;
 
   useEffect(() => {
-    if (isController && assignedHospitalId) {
-      setHospitalId(assignedHospitalId);
-      setFilterHospital(assignedHospitalId);
+    if (isController && assignedHospitalIds.length > 0) {
+      if (!hospitalId || !assignedHospitalIds.includes(hospitalId)) {
+        setHospitalId(assignedHospitalIds[0]);
+      }
+      if (filterHospital !== "all" && !assignedHospitalIds.includes(filterHospital)) {
+        setFilterHospital(assignedHospitalIds.length === 1 ? assignedHospitalIds[0] : "all");
+      }
     }
-  }, [isController, assignedHospitalId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isController, assignedHospitals.length]);
 
   const { data: hospitals = [] } = useQuery({
-    queryKey: ["hospitals", assignedHospitalId, isController],
-    enabled: !isController || !!assignedHospitalId,
+    queryKey: ["hospitals", assignedHospitalIds.join(","), isController],
+    enabled: !isController || hasAssignments,
     queryFn: async () => {
       let query = supabase.from("hospitals").select("*").eq("active", true).order("name");
-      if (isController && assignedHospitalId) {
-        query = query.eq("id", assignedHospitalId);
+      if (isController && assignedHospitalIds.length > 0) {
+        query = query.in("id", assignedHospitalIds);
       }
       const { data, error } = await query;
       if (error) throw error;
@@ -90,18 +92,19 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
   });
 
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ["service_orders", filterHospital, filterYear, assignedHospitalId, isController],
-    enabled: !isController || !!assignedHospitalId,
+    queryKey: ["service_orders", filterHospital, filterYear, assignedHospitalIds.join(","), isController],
+    enabled: !isController || hasAssignments,
     queryFn: async () => {
-      const effectiveHospital = isController ? assignedHospitalId : filterHospital;
       let query = supabase
         .from("service_orders")
         .select("*, hospitals(name, short_name)")
         .eq("year", filterYear)
         .order("month");
 
-      if (effectiveHospital && effectiveHospital !== "all") {
-        query = query.eq("hospital_id", effectiveHospital);
+      if (filterHospital && filterHospital !== "all") {
+        query = query.eq("hospital_id", filterHospital);
+      } else if (isController && assignedHospitalIds.length > 0) {
+        query = query.in("hospital_id", assignedHospitalIds);
       }
 
       const { data, error } = await query;
@@ -112,7 +115,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
 
   const resetForm = () => {
     setEditId(null);
-    setHospitalId(isController ? assignedHospitalId : "");
+    setHospitalId(isController && assignedHospitalIds.length > 0 ? assignedHospitalIds[0] : "");
     setYear(2026);
     setMonth(1);
     setServiceType("corretiva");
@@ -158,7 +161,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
 
   const handleEdit = (order: any) => {
     setEditId(order.id);
-    setHospitalId(isController ? assignedHospitalId : order.hospital_id);
+    setHospitalId(order.hospital_id);
     setYear(order.year);
     setMonth(order.month);
     setServiceType(order.service_type);
@@ -173,9 +176,8 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const effectiveHospitalId = isController ? assignedHospitalId : hospitalId;
     const payload: any = {
-      hospital_id: effectiveHospitalId,
+      hospital_id: hospitalId,
       year,
       month,
       service_type: serviceType,
@@ -191,11 +193,12 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
   };
 
   const percentual = osAbertas > 0 ? ((osFinalizadas / osAbertas) * 100).toFixed(1) : "0.0";
-  const canSubmit = isController ? !!assignedHospitalId : !!hospitalId;
+  const canSubmit = !!hospitalId;
 
-  if (isController && !isLoadingAssignment && !assignedHospitalId) {
+  if (isController && !isLoadingAssignment && assignedHospitalIds.length === 0) {
     return <p className="text-sm text-muted-foreground">Sua conta não possui hospital atribuído.</p>;
   }
+
 
   return (
     <div>
@@ -218,20 +221,16 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
                   <Label>Hospital</Label>
-                  {isController ? (
-                    <Input value={assignedHospitalLabel} disabled className="bg-muted" />
-                  ) : (
-                    <Select value={hospitalId} onValueChange={setHospitalId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {hospitals.map((h) => (
-                          <SelectItem key={h.id} value={h.id}>{h.short_name} - {h.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Select value={hospitalId} onValueChange={setHospitalId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hospitals.map((h) => (
+                        <SelectItem key={h.id} value={h.id}>{h.short_name} - {h.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Ano</Label>
@@ -304,25 +303,19 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
       </div>
 
       <div className="flex gap-3 mb-4 flex-wrap">
-        {isController ? (
-          <div className="w-72">
-            <Input value={assignedHospitalLabel} disabled className="bg-muted" />
-          </div>
-        ) : (
-          <div className="w-48">
-            <Select value={filterHospital} onValueChange={setFilterHospital}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar hospital" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Hospitais</SelectItem>
-                {hospitals.map((h) => (
-                  <SelectItem key={h.id} value={h.id}>{h.short_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <div className="w-56">
+          <Select value={filterHospital} onValueChange={setFilterHospital}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar hospital" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isController ? "Todos os meus hospitais" : "Todos os Hospitais"}</SelectItem>
+              {hospitals.map((h) => (
+                <SelectItem key={h.id} value={h.id}>{h.short_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="w-28">
           <Input type="number" value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))} />
         </div>
