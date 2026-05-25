@@ -1,5 +1,6 @@
 import { LogOut, Download, LogIn, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import okamedLogo from "@/assets/okamed-logo.jpeg";
 
 interface DashboardHeaderProps {
   isLoggedIn: boolean;
@@ -15,8 +16,8 @@ const DashboardHeader = ({ isLoggedIn, userRole, onLogin, onLogout, onManageHosp
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-auto px-3 rounded-lg bg-primary-foreground flex items-center justify-center">
-              <span className="text-primary font-extrabold text-lg tracking-wide">OKAMED</span>
+            <div className="h-12 rounded-lg bg-primary-foreground flex items-center justify-center px-3 py-1.5">
+              <img src={okamedLogo} alt="OKAMED - Tecnologia Hospitalar" className="h-full w-auto object-contain" />
             </div>
             <div className="hidden md:block border-l border-primary-foreground/30 h-8 mx-1" />
             <div className="hidden md:block">

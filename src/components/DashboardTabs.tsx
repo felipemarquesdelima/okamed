@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardCharts from "./DashboardCharts";
 import MonthlyTable from "./MonthlyTable";
 import { MonthlyData } from "@/lib/mockData";
+import okamedLogo from "@/assets/okamed-logo.jpeg";
 
 interface DashboardTabsProps {
   data: MonthlyData[];
@@ -22,17 +23,20 @@ const tabItems = [
 const DashboardTabs = ({ data, hospitalId }: DashboardTabsProps) => {
   return (
     <Tabs defaultValue="servicos" className="w-full">
-      <TabsList className="bg-muted/50 p-1 h-auto flex-wrap">
-        {tabItems.map((tab) => (
-          <TabsTrigger
-            key={tab.value}
-            value={tab.value}
-            className="text-xs px-4 py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm"
-          >
-            {tab.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      <div className="flex items-center gap-3 mb-2 flex-wrap">
+        <img src={okamedLogo} alt="OKAMED" className="h-8 w-auto object-contain" />
+        <TabsList className="bg-muted/50 p-1 h-auto flex-wrap">
+          {tabItems.map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="text-xs px-4 py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
 
       <TabsContent value="servicos" className="mt-4 space-y-4">
         <DashboardCharts data={data} hospitalId={hospitalId} />
