@@ -59,8 +59,10 @@ const Index = () => {
   }, []);
 
   // Fetch real OS data from database
+  const selectedMonthNumber = MONTH_NAMES.indexOf(selectedMonth) + 1; // 0 if "Todos os meses"
+
   const { data: dbOrders = [] } = useQuery({
-    queryKey: ["service_orders_dashboard", selectedHospital, selectedYear, selectedServices],
+    queryKey: ["service_orders_dashboard", selectedHospital, selectedYear, selectedServices, selectedMonthNumber],
     queryFn: async () => {
       let query = supabase
         .from("service_orders")
@@ -71,6 +73,9 @@ const Index = () => {
       }
       if (selectedServices.length > 0) {
         query = query.in("service_type", selectedServices);
+      }
+      if (selectedMonthNumber > 0) {
+        query = query.eq("month", selectedMonthNumber);
       }
       const { data, error } = await query.order("month");
       if (error) throw error;
