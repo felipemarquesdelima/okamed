@@ -153,7 +153,7 @@ const Index = () => {
           taxaConclusao={stats.taxaConclusao}
           acumCritico={stats.acumCritico}
         />
-        <DashboardTabs data={monthlyData} hospitalId={selectedHospital || "all"} />
+        <DashboardTabs data={monthlyData} hospitalId={selectedHospital || "all"} selectedYear={selectedYear} selectedServices={selectedServices} />
         <AlertStatus acumCritico={stats.acumCritico} />
       </main>
     </div>
