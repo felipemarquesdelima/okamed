@@ -42,7 +42,7 @@ const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices }: Das
       </div>
 
       <TabsContent value="servicos" className="mt-4 space-y-4">
-        <DashboardCharts data={data} hospitalId={hospitalId} />
+        <DashboardCharts selectedYear={selectedYear} selectedServices={selectedServices} />
         <MonthlyTable data={data} />
       </TabsContent>
 
