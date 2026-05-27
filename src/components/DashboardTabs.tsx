@@ -7,6 +7,8 @@ import okamedLogo from "@/assets/okamed-logo.jpeg";
 interface DashboardTabsProps {
   data: MonthlyData[];
   hospitalId: string;
+  selectedYear: number;
+  selectedServices: string[];
 }
 
 const tabItems = [
@@ -20,9 +22,10 @@ const tabItems = [
   { value: "processos", label: "Processos" },
 ];
 
-const DashboardTabs = ({ data, hospitalId }: DashboardTabsProps) => {
+const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices }: DashboardTabsProps) => {
   return (
     <Tabs defaultValue="servicos" className="w-full">
+
       <div className="flex items-center gap-3 mb-2 flex-wrap">
         <img src={okamedLogo} alt="OKAMED" className="h-8 w-auto object-contain" />
         <TabsList className="bg-muted/50 p-1 h-auto flex-wrap">
@@ -39,7 +42,7 @@ const DashboardTabs = ({ data, hospitalId }: DashboardTabsProps) => {
       </div>
 
       <TabsContent value="servicos" className="mt-4 space-y-4">
-        <DashboardCharts data={data} hospitalId={hospitalId} />
+        <DashboardCharts selectedYear={selectedYear} selectedServices={selectedServices} />
         <MonthlyTable data={data} />
       </TabsContent>
 
