@@ -7,6 +7,8 @@ import okamedLogo from "@/assets/okamed-logo.jpeg";
 interface DashboardTabsProps {
   data: MonthlyData[];
   hospitalId: string;
+  selectedYear: number;
+  selectedServices: string[];
 }
 
 const tabItems = [
