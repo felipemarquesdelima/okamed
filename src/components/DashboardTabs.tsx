@@ -22,9 +22,10 @@ const tabItems = [
   { value: "processos", label: "Processos" },
 ];
 
-const DashboardTabs = ({ data, hospitalId }: DashboardTabsProps) => {
+const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices }: DashboardTabsProps) => {
   return (
     <Tabs defaultValue="servicos" className="w-full">
+
       <div className="flex items-center gap-3 mb-2 flex-wrap">
         <img src={okamedLogo} alt="OKAMED" className="h-8 w-auto object-contain" />
         <TabsList className="bg-muted/50 p-1 h-auto flex-wrap">
