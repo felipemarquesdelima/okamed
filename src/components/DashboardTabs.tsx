@@ -3,6 +3,7 @@ import DashboardCharts from "./DashboardCharts";
 import MonthlyTable from "./MonthlyTable";
 import { MonthlyData } from "@/lib/mockData";
 import okamedLogo from "@/assets/okamed-logo.jpeg";
+import type { DateRange } from "@/lib/dateFilter";
 
 interface DashboardTabsProps {
   data: MonthlyData[];
@@ -10,6 +11,7 @@ interface DashboardTabsProps {
   selectedYear: number;
   selectedServices: string[];
   selectedMonthNumber: number;
+  dateRange: DateRange;
 }
 
 const tabItems = [
@@ -23,7 +25,7 @@ const tabItems = [
   { value: "processos", label: "Processos" },
 ];
 
-const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices, selectedMonthNumber }: DashboardTabsProps) => {
+const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices, selectedMonthNumber, dateRange }: DashboardTabsProps) => {
   return (
     <Tabs defaultValue="servicos" className="w-full">
 
@@ -43,7 +45,7 @@ const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices, selec
       </div>
 
       <TabsContent value="servicos" className="mt-4 space-y-4">
-        <DashboardCharts selectedYear={selectedYear} selectedServices={selectedServices} hospitalId={hospitalId} selectedMonthNumber={selectedMonthNumber} />
+        <DashboardCharts selectedYear={selectedYear} selectedServices={selectedServices} hospitalId={hospitalId} selectedMonthNumber={selectedMonthNumber} dateRange={dateRange} />
         <MonthlyTable data={data} />
       </TabsContent>
 

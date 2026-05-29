@@ -3,7 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { serviceTypes } from "@/lib/mockData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Wrench, Calendar, Settings, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Building2, Wrench, Calendar as CalendarIcon, Settings, Zap, X } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import type { DateRange } from "@/lib/dateFilter";
+import { isRangeActive } from "@/lib/dateFilter";
 
 interface FilterBarProps {
   selectedHospital: string;
@@ -14,11 +22,13 @@ interface FilterBarProps {
   onYearChange: (year: number) => void;
   selectedMonth: string;
   onMonthChange: (month: string) => void;
+  dateRange: DateRange;
+  onDateRangeChange: (r: DateRange) => void;
 }
 
 const iconMap: Record<string, React.ReactNode> = {
   wrench: <Wrench className="h-3.5 w-3.5" />,
-  calendar: <Calendar className="h-3.5 w-3.5" />,
+  calendar: <CalendarIcon className="h-3.5 w-3.5" />,
   settings: <Settings className="h-3.5 w-3.5" />,
   zap: <Zap className="h-3.5 w-3.5" />,
 };
@@ -33,7 +43,9 @@ const FilterBar = ({
   selectedServices, onServiceToggle,
   selectedYear, onYearChange,
   selectedMonth, onMonthChange,
+  dateRange, onDateRangeChange,
 }: FilterBarProps) => {
+  const rangeActive = isRangeActive(dateRange);
   const { data: hospitals = [] } = useQuery({
     queryKey: ["hospitals"],
     queryFn: async () => {
@@ -97,33 +109,86 @@ const FilterBar = ({
           </div>
         </div>
 
-        {/* Year and Month */}
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="text-sm font-semibold text-foreground mb-2 block">Ano</label>
-            <Select value={String(selectedYear)} onValueChange={(v) => onYearChange(Number(v))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2024, 2025, 2026].map((y) => (
-                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Year, Month and Period */}
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-sm font-semibold text-foreground mb-2 block">Ano</label>
+              <Select value={String(selectedYear)} onValueChange={(v) => onYearChange(Number(v))} disabled={rangeActive}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2024, 2025, 2026].map((y) => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <label className="text-sm font-semibold text-foreground mb-2 block">Mês</label>
+              <Select value={selectedMonth} onValueChange={onMonthChange} disabled={rangeActive}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((m) => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="flex-1">
-            <label className="text-sm font-semibold text-foreground mb-2 block">Mês</label>
-            <Select value={selectedMonth} onValueChange={onMonthChange}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((m) => (
-                  <SelectItem key={m} value={m}>{m}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div>
+            <label className="text-sm font-semibold text-foreground mb-2 block">Período</label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal h-10",
+                      !rangeActive && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <span className="truncate text-xs">
+                          {format(dateRange.from, "dd/MM/yy", { locale: ptBR })} – {format(dateRange.to, "dd/MM/yy", { locale: ptBR })}
+                        </span>
+                      ) : (
+                        <span className="text-xs">{format(dateRange.from, "dd/MM/yy", { locale: ptBR })}</span>
+                      )
+                    ) : (
+                      <span className="text-xs">Selecionar intervalo</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="range"
+                    selected={dateRange as any}
+                    onSelect={(r: any) => onDateRangeChange(r || {})}
+                    numberOfMonths={2}
+                    locale={ptBR}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              {rangeActive && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  onClick={() => onDateRangeChange({})}
+                  aria-label="Limpar período"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
