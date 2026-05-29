@@ -10,6 +10,7 @@ import AlertStatus from "@/components/AlertStatus";
 import AdminPanel from "@/components/AdminPanel";
 import LoginPage from "./LoginPage";
 import { MonthlyData, getMonthlyData, getStats } from "@/lib/mockData";
+import { DateRange, isRangeActive, monthInRange, yearsInRange } from "@/lib/dateFilter";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
