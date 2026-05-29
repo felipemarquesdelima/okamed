@@ -3,6 +3,7 @@ import DashboardCharts from "./DashboardCharts";
 import MonthlyTable from "./MonthlyTable";
 import { MonthlyData } from "@/lib/mockData";
 import okamedLogo from "@/assets/okamed-logo.jpeg";
+import type { DateRange } from "@/lib/dateFilter";
 
 interface DashboardTabsProps {
   data: MonthlyData[];
@@ -10,6 +11,7 @@ interface DashboardTabsProps {
   selectedYear: number;
   selectedServices: string[];
   selectedMonthNumber: number;
+  dateRange: DateRange;
 }
 
 const tabItems = [
