@@ -25,6 +25,7 @@ const Index = () => {
   const [selectedServices, setSelectedServices] = useState(["corretiva"]);
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState("Todos os meses");
+  const [dateRange, setDateRange] = useState<DateRange>({});
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
