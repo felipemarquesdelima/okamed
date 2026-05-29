@@ -23,7 +23,7 @@ const tabItems = [
   { value: "processos", label: "Processos" },
 ];
 
-const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices }: DashboardTabsProps) => {
+const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices, selectedMonthNumber }: DashboardTabsProps) => {
   return (
     <Tabs defaultValue="servicos" className="w-full">
 
@@ -43,7 +43,7 @@ const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices }: Das
       </div>
 
       <TabsContent value="servicos" className="mt-4 space-y-4">
-        <DashboardCharts selectedYear={selectedYear} selectedServices={selectedServices} hospitalId={hospitalId} />
+        <DashboardCharts selectedYear={selectedYear} selectedServices={selectedServices} hospitalId={hospitalId} selectedMonthNumber={selectedMonthNumber} />
         <MonthlyTable data={data} />
       </TabsContent>
 
