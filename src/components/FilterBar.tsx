@@ -109,33 +109,86 @@ const FilterBar = ({
           </div>
         </div>
 
-        {/* Year and Month */}
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="text-sm font-semibold text-foreground mb-2 block">Ano</label>
-            <Select value={String(selectedYear)} onValueChange={(v) => onYearChange(Number(v))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2024, 2025, 2026].map((y) => (
-                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Year, Month and Period */}
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-sm font-semibold text-foreground mb-2 block">Ano</label>
+              <Select value={String(selectedYear)} onValueChange={(v) => onYearChange(Number(v))} disabled={rangeActive}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2024, 2025, 2026].map((y) => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <label className="text-sm font-semibold text-foreground mb-2 block">Mês</label>
+              <Select value={selectedMonth} onValueChange={onMonthChange} disabled={rangeActive}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((m) => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="flex-1">
-            <label className="text-sm font-semibold text-foreground mb-2 block">Mês</label>
-            <Select value={selectedMonth} onValueChange={onMonthChange}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((m) => (
-                  <SelectItem key={m} value={m}>{m}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div>
+            <label className="text-sm font-semibold text-foreground mb-2 block">Período</label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal h-10",
+                      !rangeActive && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <span className="truncate text-xs">
+                          {format(dateRange.from, "dd/MM/yy", { locale: ptBR })} – {format(dateRange.to, "dd/MM/yy", { locale: ptBR })}
+                        </span>
+                      ) : (
+                        <span className="text-xs">{format(dateRange.from, "dd/MM/yy", { locale: ptBR })}</span>
+                      )
+                    ) : (
+                      <span className="text-xs">Selecionar intervalo</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="range"
+                    selected={dateRange as any}
+                    onSelect={(r: any) => onDateRangeChange(r || {})}
+                    numberOfMonths={2}
+                    locale={ptBR}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              {rangeActive && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  onClick={() => onDateRangeChange({})}
+                  aria-label="Limpar período"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
