@@ -9,9 +9,10 @@ interface DashboardChartsProps {
   selectedYear: number;
   selectedServices: string[];
   hospitalId: string;
+  selectedMonthNumber: number;
 }
 
-const DashboardCharts = ({ selectedYear, selectedServices, hospitalId }: DashboardChartsProps) => {
+const DashboardCharts = ({ selectedYear, selectedServices, hospitalId, selectedMonthNumber }: DashboardChartsProps) => {
   const { data: hospitals = [] } = useQuery({
     queryKey: ["hospitals-charts"],
     queryFn: async () => {
@@ -26,10 +27,11 @@ const DashboardCharts = ({ selectedYear, selectedServices, hospitalId }: Dashboa
   });
 
   const { data: orders = [] } = useQuery({
-    queryKey: ["service_orders_charts", selectedYear, selectedServices],
+    queryKey: ["service_orders_charts", selectedYear, selectedServices, selectedMonthNumber],
     queryFn: async () => {
       let query = supabase.from("service_orders").select("*").eq("year", selectedYear);
       if (selectedServices.length > 0) query = query.in("service_type", selectedServices);
+      if (selectedMonthNumber > 0) query = query.eq("month", selectedMonthNumber);
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
@@ -43,7 +45,11 @@ const DashboardCharts = ({ selectedYear, selectedServices, hospitalId }: Dashboa
 
   const lineData = useMemo(() => {
     return MONTHS.map((name, i) => {
-      const monthOrders = filteredOrders.filter((o: any) => o.month === i + 1);
+      const monthNum = i + 1;
+      if (selectedMonthNumber > 0 && monthNum !== selectedMonthNumber) {
+        return { name, percentual: null };
+      }
+      const monthOrders = filteredOrders.filter((o: any) => o.month === monthNum);
       const abertas = monthOrders.reduce((s: number, o: any) => s + (o.os_abertas || 0), 0);
       const finalizadas = monthOrders.reduce((s: number, o: any) => s + (o.os_finalizadas || 0), 0);
       return {
@@ -51,12 +57,12 @@ const DashboardCharts = ({ selectedYear, selectedServices, hospitalId }: Dashboa
         percentual: abertas > 0 ? Math.round((finalizadas / abertas) * 1000) / 10 : null,
       };
     });
-  }, [filteredOrders]);
+  }, [filteredOrders, selectedMonthNumber]);
 
   const barData = useMemo(() => {
     const hospitalsToShow = hospitalId === "all" ? hospitals : hospitals.filter((h: any) => h.id === hospitalId);
     return hospitalsToShow.map((h: any) => {
-      const hOrders = orders.filter((o: any) => o.hospital_id === h.id);
+      const hOrders = filteredOrders.filter((o: any) => o.hospital_id === h.id);
       const finalizadas = hOrders.reduce((s: number, o: any) => s + (o.os_finalizadas || 0), 0);
       const abertas = hOrders.reduce((s: number, o: any) => s + (o.os_abertas || 0), 0);
       return {
@@ -65,7 +71,7 @@ const DashboardCharts = ({ selectedYear, selectedServices, hospitalId }: Dashboa
         pendentes: Math.max(0, abertas - finalizadas),
       };
     });
-  }, [orders, hospitals, hospitalId]);
+  }, [filteredOrders, hospitals, hospitalId]);
 
   const selectedHospitalName =
     hospitalId === "all"
