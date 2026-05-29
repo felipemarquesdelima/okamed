@@ -157,6 +157,8 @@ const Index = () => {
           onYearChange={setSelectedYear}
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
         />
         <StatsCards
           totalAbertas={stats.totalAbertas}
@@ -164,7 +166,7 @@ const Index = () => {
           taxaConclusao={stats.taxaConclusao}
           acumCritico={stats.acumCritico}
         />
-        <DashboardTabs data={monthlyData} hospitalId={selectedHospital || "all"} selectedYear={selectedYear} selectedServices={selectedServices} selectedMonthNumber={selectedMonthNumber} />
+        <DashboardTabs data={monthlyData} hospitalId={selectedHospital || "all"} selectedYear={selectedYear} selectedServices={selectedServices} selectedMonthNumber={selectedMonthNumber} dateRange={dateRange} />
         <AlertStatus acumCritico={stats.acumCritico} />
       </main>
     </div>
