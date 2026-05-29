@@ -25,7 +25,7 @@ const tabItems = [
   { value: "processos", label: "Processos" },
 ];
 
-const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices, selectedMonthNumber }: DashboardTabsProps) => {
+const DashboardTabs = ({ data, hospitalId, selectedYear, selectedServices, selectedMonthNumber, dateRange }: DashboardTabsProps) => {
   return (
     <Tabs defaultValue="servicos" className="w-full">
 
