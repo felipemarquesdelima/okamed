@@ -9,6 +9,7 @@ interface DashboardTabsProps {
   hospitalId: string;
   selectedYear: number;
   selectedServices: string[];
+  selectedMonthNumber: number;
 }
 
 const tabItems = [
