@@ -28,7 +28,7 @@ interface FilterBarProps {
 
 const iconMap: Record<string, React.ReactNode> = {
   wrench: <Wrench className="h-3.5 w-3.5" />,
-  calendar: <Calendar className="h-3.5 w-3.5" />,
+  calendar: <CalendarIcon className="h-3.5 w-3.5" />,
   settings: <Settings className="h-3.5 w-3.5" />,
   zap: <Zap className="h-3.5 w-3.5" />,
 };
@@ -43,7 +43,9 @@ const FilterBar = ({
   selectedServices, onServiceToggle,
   selectedYear, onYearChange,
   selectedMonth, onMonthChange,
+  dateRange, onDateRangeChange,
 }: FilterBarProps) => {
+  const rangeActive = isRangeActive(dateRange);
   const { data: hospitals = [] } = useQuery({
     queryKey: ["hospitals"],
     queryFn: async () => {
