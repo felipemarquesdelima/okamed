@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
+import { DateRange, isRangeActive, monthInRange, yearsInRange } from "@/lib/dateFilter";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -10,9 +11,13 @@ interface DashboardChartsProps {
   selectedServices: string[];
   hospitalId: string;
   selectedMonthNumber: number;
+  dateRange: DateRange;
 }
 
-const DashboardCharts = ({ selectedYear, selectedServices, hospitalId, selectedMonthNumber }: DashboardChartsProps) => {
+const DashboardCharts = ({ selectedYear, selectedServices, hospitalId, selectedMonthNumber, dateRange }: DashboardChartsProps) => {
+  const rangeActive = isRangeActive(dateRange);
+  const rangeKey = rangeActive ? `${dateRange.from!.toISOString()}_${dateRange.to!.toISOString()}` : "";
+
   const { data: hospitals = [] } = useQuery({
     queryKey: ["hospitals-charts"],
     queryFn: async () => {
@@ -27,14 +32,20 @@ const DashboardCharts = ({ selectedYear, selectedServices, hospitalId, selectedM
   });
 
   const { data: orders = [] } = useQuery({
-    queryKey: ["service_orders_charts", selectedYear, selectedServices, selectedMonthNumber],
+    queryKey: ["service_orders_charts", selectedYear, selectedServices, selectedMonthNumber, rangeKey],
     queryFn: async () => {
-      let query = supabase.from("service_orders").select("*").eq("year", selectedYear);
+      let query = supabase.from("service_orders").select("*");
+      if (rangeActive) {
+        query = query.in("year", yearsInRange(dateRange));
+      } else {
+        query = query.eq("year", selectedYear);
+        if (selectedMonthNumber > 0) query = query.eq("month", selectedMonthNumber);
+      }
       if (selectedServices.length > 0) query = query.in("service_type", selectedServices);
-      if (selectedMonthNumber > 0) query = query.eq("month", selectedMonthNumber);
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      const rows = data || [];
+      return rangeActive ? rows.filter((o: any) => monthInRange(o.year, o.month, dateRange)) : rows;
     },
   });
 
@@ -46,7 +57,7 @@ const DashboardCharts = ({ selectedYear, selectedServices, hospitalId, selectedM
   const lineData = useMemo(() => {
     return MONTHS.map((name, i) => {
       const monthNum = i + 1;
-      if (selectedMonthNumber > 0 && monthNum !== selectedMonthNumber) {
+      if (!rangeActive && selectedMonthNumber > 0 && monthNum !== selectedMonthNumber) {
         return { name, percentual: null };
       }
       const monthOrders = filteredOrders.filter((o: any) => o.month === monthNum);
@@ -57,7 +68,7 @@ const DashboardCharts = ({ selectedYear, selectedServices, hospitalId, selectedM
         percentual: abertas > 0 ? Math.round((finalizadas / abertas) * 1000) / 10 : null,
       };
     });
-  }, [filteredOrders, selectedMonthNumber]);
+  }, [filteredOrders, selectedMonthNumber, rangeActive]);
 
   const barData = useMemo(() => {
     const hospitalsToShow = hospitalId === "all" ? hospitals : hospitals.filter((h: any) => h.id === hospitalId);
