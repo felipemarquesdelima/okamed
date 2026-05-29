@@ -78,12 +78,12 @@ const FilterBar = ({
         {/* Service Type */}
         <div className="lg:col-span-2">
           <label className="text-sm font-semibold text-foreground mb-2 block">Tipo de Serviço</label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide">
             {serviceTypes.map((st) => (
               <Badge
                 key={st.id}
                 variant={selectedServices.includes(st.id) ? "default" : "outline"}
-                className={`cursor-pointer transition-all text-xs py-1.5 px-3 ${
+                className={`cursor-pointer transition-all whitespace-nowrap text-[11px] leading-none py-1 px-2 ${
                   selectedServices.includes(st.id)
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "hover:bg-muted"
