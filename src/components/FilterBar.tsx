@@ -3,7 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { serviceTypes } from "@/lib/mockData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Wrench, Calendar, Settings, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Building2, Wrench, Calendar as CalendarIcon, Settings, Zap, X } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import type { DateRange } from "@/lib/dateFilter";
+import { isRangeActive } from "@/lib/dateFilter";
 
 interface FilterBarProps {
   selectedHospital: string;
@@ -14,6 +22,8 @@ interface FilterBarProps {
   onYearChange: (year: number) => void;
   selectedMonth: string;
   onMonthChange: (month: string) => void;
+  dateRange: DateRange;
+  onDateRangeChange: (r: DateRange) => void;
 }
 
 const iconMap: Record<string, React.ReactNode> = {
