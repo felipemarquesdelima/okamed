@@ -1,20 +1,17 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2 } from "lucide-react";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 interface DashboardChartsProps {
   selectedYear: number;
   selectedServices: string[];
+  hospitalId: string;
 }
 
-const DashboardCharts = ({ selectedYear, selectedServices }: DashboardChartsProps) => {
-  const [hospitalFilter, setHospitalFilter] = useState<string>("all");
-
+const DashboardCharts = ({ selectedYear, selectedServices, hospitalId }: DashboardChartsProps) => {
   const { data: hospitals = [] } = useQuery({
     queryKey: ["hospitals-charts"],
     queryFn: async () => {
@@ -40,11 +37,10 @@ const DashboardCharts = ({ selectedYear, selectedServices }: DashboardChartsProp
   });
 
   const filteredOrders = useMemo(
-    () => (hospitalFilter === "all" ? orders : orders.filter((o: any) => o.hospital_id === hospitalFilter)),
-    [orders, hospitalFilter],
+    () => (hospitalId === "all" ? orders : orders.filter((o: any) => o.hospital_id === hospitalId)),
+    [orders, hospitalId],
   );
 
-  // Line chart: monthly % finalizadas
   const lineData = useMemo(() => {
     return MONTHS.map((name, i) => {
       const monthOrders = filteredOrders.filter((o: any) => o.month === i + 1);
@@ -57,9 +53,8 @@ const DashboardCharts = ({ selectedYear, selectedServices }: DashboardChartsProp
     });
   }, [filteredOrders]);
 
-  // Bar chart: per-hospital totals (or single hospital)
   const barData = useMemo(() => {
-    const hospitalsToShow = hospitalFilter === "all" ? hospitals : hospitals.filter((h: any) => h.id === hospitalFilter);
+    const hospitalsToShow = hospitalId === "all" ? hospitals : hospitals.filter((h: any) => h.id === hospitalId);
     return hospitalsToShow.map((h: any) => {
       const hOrders = orders.filter((o: any) => o.hospital_id === h.id);
       const finalizadas = hOrders.reduce((s: number, o: any) => s + (o.os_finalizadas || 0), 0);
@@ -70,46 +65,25 @@ const DashboardCharts = ({ selectedYear, selectedServices }: DashboardChartsProp
         pendentes: Math.max(0, abertas - finalizadas),
       };
     });
-  }, [orders, hospitals, hospitalFilter]);
+  }, [orders, hospitals, hospitalId]);
 
   const selectedHospitalName =
-    hospitalFilter === "all"
+    hospitalId === "all"
       ? "Geral"
-      : hospitals.find((h: any) => h.id === hospitalFilter)?.name || "";
+      : hospitals.find((h: any) => h.id === hospitalId)?.name || "";
 
   const lineTitle =
-    hospitalFilter === "all"
+    hospitalId === "all"
       ? "Percentual de OS's Finalizadas — Geral"
       : `Percentual de OS's Finalizadas — ${selectedHospitalName}`;
 
   const barTitle =
-    hospitalFilter === "all"
+    hospitalId === "all"
       ? "Total de OS's por Unidade"
       : `Total de OS's — ${selectedHospitalName}`;
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Section filter */}
-      <div className="bg-card rounded-xl p-4 stat-card-shadow flex flex-col sm:flex-row sm:items-center gap-3">
-        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-primary" />
-          Hospital / Unidade
-        </label>
-        <Select value={hospitalFilter} onValueChange={setHospitalFilter}>
-          <SelectTrigger className="w-full sm:max-w-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Geral (Todos os Hospitais)</SelectItem>
-            {hospitals.map((h: any) => (
-              <SelectItem key={h.id} value={h.id}>
-                {h.name} ({h.short_name})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-card rounded-xl p-5 stat-card-shadow flex flex-col">
           <h3 className="text-base font-semibold text-foreground mb-1">{lineTitle}</h3>
@@ -143,7 +117,7 @@ const DashboardCharts = ({ selectedYear, selectedServices }: DashboardChartsProp
         <div className="bg-card rounded-xl p-5 stat-card-shadow flex flex-col">
           <h3 className="text-base font-semibold text-foreground mb-1">{barTitle}</h3>
           <p className="text-xs text-muted-foreground mb-4">
-            {hospitalFilter === "all" ? "Comparativo anual entre unidades" : "Total anual de ordens de serviço"}
+            {hospitalId === "all" ? "Comparativo anual entre unidades" : "Total anual de ordens de serviço"}
           </p>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={barData}>
