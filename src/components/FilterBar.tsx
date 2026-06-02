@@ -73,14 +73,14 @@ const FilterBar = ({
 
   return (
     <div className="bg-card rounded-xl p-4 md:p-6 stat-card-shadow">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 md:gap-5">
         {/* Hospital Select */}
-        <div>
+        <div className="lg:col-span-3">
           <label className="text-sm font-semibold text-foreground mb-2 block">Unidade Hospitalar</label>
           <Select value={selectedHospital} onValueChange={onHospitalChange}>
             <SelectTrigger className="w-full">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 min-w-0">
+                <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                 <SelectValue placeholder="Selecione o hospital" />
               </div>
             </SelectTrigger>
@@ -104,29 +104,33 @@ const FilterBar = ({
         </div>
 
         {/* Service Type */}
-        <div>
+        <div className="lg:col-span-6 min-w-0">
           <label className="text-sm font-semibold text-foreground mb-2 block">Tipo de Serviço</label>
-          <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide">
-            {serviceTypes.map((st) => (
-              <Badge
-                key={st.id}
-                variant={selectedServices.includes(st.id) ? "default" : "outline"}
-                className={`cursor-pointer transition-all whitespace-nowrap text-[11px] leading-none py-1 px-2 ${
-                  selectedServices.includes(st.id)
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "hover:bg-muted"
-                }`}
-                onClick={() => onServiceToggle(st.id)}
-              >
-                {iconMap[st.icon]}
-                <span className="ml-1">{st.label}</span>
-              </Badge>
-            ))}
+          <div className="flex flex-wrap gap-1.5">
+            {serviceTypes.map((st) => {
+              const active = selectedServices.includes(st.id);
+              return (
+                <Badge
+                  key={st.id}
+                  variant={active ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-all whitespace-nowrap text-xs leading-none py-2 px-2.5 h-8 inline-flex items-center gap-1.5 rounded-md border",
+                    active
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 border-primary"
+                      : "bg-background hover:bg-muted",
+                  )}
+                  onClick={() => onServiceToggle(st.id)}
+                >
+                  {iconMap[st.icon]}
+                  <span>{st.label}</span>
+                </Badge>
+              );
+            })}
           </div>
         </div>
 
         {/* Period */}
-        <div>
+        <div className="lg:col-span-3">
           <label className="text-sm font-semibold text-foreground mb-2 block">Período</label>
           <div className="flex gap-2">
             <Popover open={open} onOpenChange={setOpen}>
