@@ -9,11 +9,10 @@ import DashboardTabs from "@/components/DashboardTabs";
 import AlertStatus from "@/components/AlertStatus";
 import AdminPanel from "@/components/AdminPanel";
 import LoginPage from "./LoginPage";
-import { MonthlyData, getMonthlyData, getStats } from "@/lib/mockData";
+import { MonthlyData } from "@/lib/mockData";
 import { DateRange, isRangeActive, monthInRange, yearsInRange } from "@/lib/dateFilter";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -23,9 +22,11 @@ const Index = () => {
 
   const [selectedHospital, setSelectedHospital] = useState("all");
   const [selectedServices, setSelectedServices] = useState(["corretiva"]);
-  const [selectedYear, setSelectedYear] = useState(2026);
-  const [selectedMonth, setSelectedMonth] = useState("Todos os meses");
-  const [dateRange, setDateRange] = useState<DateRange>({});
+  // Default period = current year
+  const [dateRange, setDateRange] = useState<DateRange>(() => ({
+    from: new Date(2026, 0, 1),
+    to: new Date(2026, 11, 31),
+  }));
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -60,20 +61,15 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch real OS data from database
-  const selectedMonthNumber = MONTH_NAMES.indexOf(selectedMonth) + 1; // 0 if "Todos os meses"
   const rangeActive = isRangeActive(dateRange);
   const rangeKey = rangeActive ? `${dateRange.from!.toISOString()}_${dateRange.to!.toISOString()}` : "";
 
   const { data: dbOrders = [] } = useQuery({
-    queryKey: ["service_orders_dashboard", selectedHospital, selectedYear, selectedServices, selectedMonthNumber, rangeKey],
+    queryKey: ["service_orders_dashboard", selectedHospital, selectedServices, rangeKey],
     queryFn: async () => {
       let query = supabase.from("service_orders").select("*");
       if (rangeActive) {
         query = query.in("year", yearsInRange(dateRange));
-      } else {
-        query = query.eq("year", selectedYear);
-        if (selectedMonthNumber > 0) query = query.eq("month", selectedMonthNumber);
       }
       if (selectedHospital && selectedHospital !== "all") {
         query = query.eq("hospital_id", selectedHospital);
@@ -105,7 +101,6 @@ const Index = () => {
     return <LoginPage onBack={() => setShowLogin(false)} />;
   }
 
-  // Build monthly data from DB orders, grouped by month
   const monthlyData: MonthlyData[] = MONTHS.map((monthName, i) => {
     const monthOrders = dbOrders.filter((o: any) => o.month === i + 1);
     if (monthOrders.length === 0) {
@@ -153,10 +148,6 @@ const Index = () => {
           onHospitalChange={setSelectedHospital}
           selectedServices={selectedServices}
           onServiceToggle={handleServiceToggle}
-          selectedYear={selectedYear}
-          onYearChange={setSelectedYear}
-          selectedMonth={selectedMonth}
-          onMonthChange={setSelectedMonth}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
         />
@@ -166,7 +157,7 @@ const Index = () => {
           taxaConclusao={stats.taxaConclusao}
           acumCritico={stats.acumCritico}
         />
-        <DashboardTabs data={monthlyData} hospitalId={selectedHospital || "all"} selectedYear={selectedYear} selectedServices={selectedServices} selectedMonthNumber={selectedMonthNumber} dateRange={dateRange} />
+        <DashboardTabs data={monthlyData} hospitalId={selectedHospital || "all"} selectedServices={selectedServices} dateRange={dateRange} />
         <AlertStatus acumCritico={stats.acumCritico} />
       </main>
     </div>
