@@ -43,24 +43,30 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active: boolean
           created_at: string
           email: string
+          force_password_change: boolean
           full_name: string | null
           id: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           email: string
+          force_password_change?: boolean
           full_name?: string | null
           id?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           email?: string
+          force_password_change?: boolean
           full_name?: string | null
           id?: string
           updated_at?: string
@@ -123,6 +129,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          target_email: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
       }
       user_hospital_assignments: {
         Row: {
