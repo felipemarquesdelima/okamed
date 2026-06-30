@@ -64,15 +64,17 @@ const Index = () => {
   const rangeActive = isRangeActive(dateRange);
   const rangeKey = rangeActive ? `${dateRange.from!.toISOString()}_${dateRange.to!.toISOString()}` : "";
 
+  const hospitalKey = selectedHospitalIds.slice().sort().join(",");
+
   const { data: dbOrders = [] } = useQuery({
-    queryKey: ["service_orders_dashboard", selectedHospital, selectedServices, rangeKey],
+    queryKey: ["service_orders_dashboard", hospitalKey, selectedServices, rangeKey],
     queryFn: async () => {
       let query = supabase.from("service_orders").select("*");
       if (rangeActive) {
         query = query.in("year", yearsInRange(dateRange));
       }
-      if (selectedHospital && selectedHospital !== "all") {
-        query = query.eq("hospital_id", selectedHospital);
+      if (selectedHospitalIds.length > 0) {
+        query = query.in("hospital_id", selectedHospitalIds);
       }
       if (selectedServices.length > 0) {
         query = query.in("service_type", selectedServices);
