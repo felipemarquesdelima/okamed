@@ -20,7 +20,7 @@ const Index = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showManagement, setShowManagement] = useState(false);
 
-  const [selectedHospital, setSelectedHospital] = useState("all");
+  const [selectedHospitalIds, setSelectedHospitalIds] = useState<string[]>([]);
   const [selectedServices, setSelectedServices] = useState(["corretiva"]);
   // Default period = current year
   const [dateRange, setDateRange] = useState<DateRange>(() => ({
