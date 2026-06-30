@@ -20,7 +20,7 @@ const Index = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showManagement, setShowManagement] = useState(false);
 
-  const [selectedHospital, setSelectedHospital] = useState("all");
+  const [selectedHospitalIds, setSelectedHospitalIds] = useState<string[]>([]);
   const [selectedServices, setSelectedServices] = useState(["corretiva"]);
   // Default period = current year
   const [dateRange, setDateRange] = useState<DateRange>(() => ({
@@ -64,15 +64,17 @@ const Index = () => {
   const rangeActive = isRangeActive(dateRange);
   const rangeKey = rangeActive ? `${dateRange.from!.toISOString()}_${dateRange.to!.toISOString()}` : "";
 
+  const hospitalKey = selectedHospitalIds.slice().sort().join(",");
+
   const { data: dbOrders = [] } = useQuery({
-    queryKey: ["service_orders_dashboard", selectedHospital, selectedServices, rangeKey],
+    queryKey: ["service_orders_dashboard", hospitalKey, selectedServices, rangeKey],
     queryFn: async () => {
       let query = supabase.from("service_orders").select("*");
       if (rangeActive) {
         query = query.in("year", yearsInRange(dateRange));
       }
-      if (selectedHospital && selectedHospital !== "all") {
-        query = query.eq("hospital_id", selectedHospital);
+      if (selectedHospitalIds.length > 0) {
+        query = query.in("hospital_id", selectedHospitalIds);
       }
       if (selectedServices.length > 0) {
         query = query.in("service_type", selectedServices);
@@ -144,8 +146,8 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6 space-y-4">
         {showManagement && (userRole === "admin" || userRole === "controlador") && <AdminPanel userRole={userRole} />}
         <FilterBar
-          selectedHospital={selectedHospital}
-          onHospitalChange={setSelectedHospital}
+          selectedHospitalIds={selectedHospitalIds}
+          onHospitalIdsChange={setSelectedHospitalIds}
           selectedServices={selectedServices}
           onServiceToggle={handleServiceToggle}
           dateRange={dateRange}
@@ -157,7 +159,7 @@ const Index = () => {
           taxaConclusao={stats.taxaConclusao}
           acumCritico={stats.acumCritico}
         />
-        <DashboardTabs data={monthlyData} hospitalId={selectedHospital || "all"} selectedServices={selectedServices} dateRange={dateRange} />
+        <DashboardTabs data={monthlyData} hospitalIds={selectedHospitalIds} selectedServices={selectedServices} dateRange={dateRange} />
         <AlertStatus acumCritico={stats.acumCritico} />
       </main>
     </div>

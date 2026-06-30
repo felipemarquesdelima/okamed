@@ -7,7 +7,7 @@ import type { DateRange } from "@/lib/dateFilter";
 
 interface DashboardTabsProps {
   data: MonthlyData[];
-  hospitalId: string;
+  hospitalIds: string[];
   selectedServices: string[];
   dateRange: DateRange;
 }
@@ -23,7 +23,7 @@ const tabItems = [
   { value: "processos", label: "Processos" },
 ];
 
-const DashboardTabs = ({ data, hospitalId, selectedServices, dateRange }: DashboardTabsProps) => {
+const DashboardTabs = ({ data, hospitalIds, selectedServices, dateRange }: DashboardTabsProps) => {
   return (
     <Tabs defaultValue="servicos" className="w-full">
 
@@ -43,7 +43,7 @@ const DashboardTabs = ({ data, hospitalId, selectedServices, dateRange }: Dashbo
       </div>
 
       <TabsContent value="servicos" className="mt-4 space-y-4">
-        <DashboardCharts selectedServices={selectedServices} hospitalId={hospitalId} dateRange={dateRange} />
+        <DashboardCharts selectedServices={selectedServices} hospitalIds={hospitalIds} dateRange={dateRange} />
         <MonthlyTable data={data} />
       </TabsContent>
 

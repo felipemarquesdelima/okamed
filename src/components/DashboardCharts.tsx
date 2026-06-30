@@ -8,13 +8,14 @@ const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "
 
 interface DashboardChartsProps {
   selectedServices: string[];
-  hospitalId: string;
+  hospitalIds: string[];
   dateRange: DateRange;
 }
 
-const DashboardCharts = ({ selectedServices, hospitalId, dateRange }: DashboardChartsProps) => {
+const DashboardCharts = ({ selectedServices, hospitalIds, dateRange }: DashboardChartsProps) => {
   const rangeActive = isRangeActive(dateRange);
   const rangeKey = rangeActive ? `${dateRange.from!.toISOString()}_${dateRange.to!.toISOString()}` : "";
+  const hospitalKey = hospitalIds.slice().sort().join(",");
 
   const { data: hospitals = [] } = useQuery({
     queryKey: ["hospitals-charts"],
@@ -44,9 +45,11 @@ const DashboardCharts = ({ selectedServices, hospitalId, dateRange }: DashboardC
     },
   });
 
+  const isAll = hospitalIds.length === 0 || hospitalIds.length === hospitals.length;
+
   const filteredOrders = useMemo(
-    () => (hospitalId === "all" ? orders : orders.filter((o: any) => o.hospital_id === hospitalId)),
-    [orders, hospitalId],
+    () => (isAll ? orders : orders.filter((o: any) => hospitalIds.includes(o.hospital_id))),
+    [orders, hospitalIds, isAll],
   );
 
   const lineData = useMemo(() => {
@@ -63,7 +66,7 @@ const DashboardCharts = ({ selectedServices, hospitalId, dateRange }: DashboardC
   }, [filteredOrders]);
 
   const barData = useMemo(() => {
-    const hospitalsToShow = hospitalId === "all" ? hospitals : hospitals.filter((h: any) => h.id === hospitalId);
+    const hospitalsToShow = isAll ? hospitals : hospitals.filter((h: any) => hospitalIds.includes(h.id));
     return hospitalsToShow.map((h: any) => {
       const hOrders = filteredOrders.filter((o: any) => o.hospital_id === h.id);
       const finalizadas = hOrders.reduce((s: number, o: any) => s + (o.os_finalizadas || 0), 0);
@@ -74,22 +77,22 @@ const DashboardCharts = ({ selectedServices, hospitalId, dateRange }: DashboardC
         pendentes: Math.max(0, abertas - finalizadas),
       };
     });
-  }, [filteredOrders, hospitals, hospitalId]);
+  }, [filteredOrders, hospitals, hospitalIds, isAll]);
 
-  const selectedHospitalName =
-    hospitalId === "all"
-      ? "Geral"
-      : hospitals.find((h: any) => h.id === hospitalId)?.name || "";
+  const selectedHospitalName = useMemo(() => {
+    if (isAll) return "Geral";
+    const selected = hospitals.filter((h: any) => hospitalIds.includes(h.id));
+    if (selected.length === 1) return selected[0].name;
+    if (selected.length <= 3) return selected.map((h: any) => h.short_name).join(" + ");
+    return `${selected.length} hospitais`;
+  }, [hospitals, hospitalIds, isAll]);
 
-  const lineTitle =
-    hospitalId === "all"
-      ? "Percentual de OS's Finalizadas — Geral"
-      : `Percentual de OS's Finalizadas — ${selectedHospitalName}`;
-
-  const barTitle =
-    hospitalId === "all"
-      ? "Total de OS's por Unidade"
-      : `Total de OS's — ${selectedHospitalName}`;
+  const lineTitle = `Percentual de OS's Finalizadas — ${selectedHospitalName}`;
+  const barTitle = isAll || hospitalIds.length > 1
+    ? "Total de OS's por Unidade"
+    : `Total de OS's — ${selectedHospitalName}`;
+  // unused ref to keep variable name
+  void hospitalKey;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -126,7 +129,7 @@ const DashboardCharts = ({ selectedServices, hospitalId, dateRange }: DashboardC
         <div className="bg-card rounded-xl p-5 stat-card-shadow flex flex-col">
           <h3 className="text-base font-semibold text-foreground mb-1">{barTitle}</h3>
           <p className="text-xs text-muted-foreground mb-4">
-            {hospitalId === "all" ? "Comparativo anual entre unidades" : "Total anual de ordens de serviço"}
+            {isAll || hospitalIds.length > 1 ? "Comparativo entre unidades" : "Total de ordens de serviço"}
           </p>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={barData}>
