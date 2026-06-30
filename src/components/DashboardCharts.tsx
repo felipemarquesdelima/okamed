@@ -129,7 +129,7 @@ const DashboardCharts = ({ selectedServices, hospitalIds, dateRange }: Dashboard
         <div className="bg-card rounded-xl p-5 stat-card-shadow flex flex-col">
           <h3 className="text-base font-semibold text-foreground mb-1">{barTitle}</h3>
           <p className="text-xs text-muted-foreground mb-4">
-            {hospitalId === "all" ? "Comparativo anual entre unidades" : "Total anual de ordens de serviço"}
+            {isAll || hospitalIds.length > 1 ? "Comparativo entre unidades" : "Total de ordens de serviço"}
           </p>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={barData}>
