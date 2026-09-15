@@ -1,33 +1,38 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, ClipboardList, Users } from "lucide-react";
+import { Building2, ClipboardList, Home, Users } from "lucide-react";
 import HospitalManagement from "./HospitalManagement";
 import ServiceOrderManagement from "./ServiceOrderManagement";
 import UserManagement from "./UserManagement";
 
 interface AdminPanelProps {
   userRole?: string;
+  onHome: () => void;
 }
 
-const AdminPanel = ({ userRole = "admin" }: AdminPanelProps) => {
+const AdminPanel = ({ userRole = "admin", onHome }: AdminPanelProps) => {
   const isAdmin = userRole === "admin";
   const defaultTab = isAdmin ? "hospitals" : "os-data";
 
   return (
     <div className="bg-card rounded-xl p-5 stat-card-shadow">
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 max-w-full justify-start overflow-x-auto">
+          <TabsTrigger value="home" onClick={onHome} className="shrink-0 gap-1.5">
+            <Home className="h-4 w-4" />
+            Página inicial
+          </TabsTrigger>
           {isAdmin && (
-            <TabsTrigger value="hospitals" className="gap-1.5">
+            <TabsTrigger value="hospitals" className="shrink-0 gap-1.5">
               <Building2 className="h-4 w-4" />
               Hospitais
             </TabsTrigger>
           )}
-          <TabsTrigger value="os-data" className="gap-1.5">
+          <TabsTrigger value="os-data" className="shrink-0 gap-1.5">
             <ClipboardList className="h-4 w-4" />
             Dados de OS
           </TabsTrigger>
           {isAdmin && (
-            <TabsTrigger value="users" className="gap-1.5">
+            <TabsTrigger value="users" className="shrink-0 gap-1.5">
               <Users className="h-4 w-4" />
               Usuários
             </TabsTrigger>

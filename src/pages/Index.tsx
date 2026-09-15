@@ -144,7 +144,9 @@ const Index = () => {
         onManageHospitals={() => setShowManagement(!showManagement)}
       />
       <main className="container mx-auto px-4 py-6 space-y-4">
-        {showManagement && (userRole === "admin" || userRole === "controlador") && <AdminPanel userRole={userRole} />}
+        {showManagement && (userRole === "admin" || userRole === "controlador") && (
+          <AdminPanel userRole={userRole} onHome={() => setShowManagement(false)} />
+        )}
         <FilterBar
           selectedHospitalIds={selectedHospitalIds}
           onHospitalIdsChange={setSelectedHospitalIds}
