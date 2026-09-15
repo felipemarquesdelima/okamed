@@ -30,7 +30,28 @@ interface ServiceOrderRow {
   acumCritico: number;
   acumGeral: number;
   analiseCritica: string;
+  actionPlan: ActionPlan;
 }
+
+interface ActionPlan {
+  whatAction: string;
+  whyAction: string;
+  whereAction: string;
+  dueDate: string;
+  responsible: string;
+  howAction: string;
+  estimatedCost: string;
+}
+
+const createActionPlan = (): ActionPlan => ({
+  whatAction: "",
+  whyAction: "",
+  whereAction: "",
+  dueDate: "",
+  responsible: "",
+  howAction: "",
+  estimatedCost: "",
+});
 
 const serviceOrderRowSchema = z.object({
   serviceType: z.enum(["corretiva", "preventiva", "calibracao", "eletrica"]),
@@ -39,6 +60,15 @@ const serviceOrderRowSchema = z.object({
   acumCritico: z.number().int().min(0).max(999999),
   acumGeral: z.number().int().min(0).max(999999),
   analiseCritica: z.string().trim().max(2000),
+  actionPlan: z.object({
+    whatAction: z.string().max(2000),
+    whyAction: z.string().max(2000),
+    whereAction: z.string().max(500),
+    dueDate: z.string().max(20),
+    responsible: z.string().max(500),
+    howAction: z.string().max(2000),
+    estimatedCost: z.string().max(30),
+  }),
 });
 
 const createServiceRow = (serviceType: ServiceType = "corretiva"): ServiceOrderRow => ({
@@ -49,6 +79,7 @@ const createServiceRow = (serviceType: ServiceType = "corretiva"): ServiceOrderR
   acumCritico: 0,
   acumGeral: 0,
   analiseCritica: "",
+  actionPlan: createActionPlan(),
 });
 
 interface ServiceOrderManagementProps {
@@ -75,6 +106,15 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: goalPercent = 90 } = useQuery({
+    queryKey: ["site_settings", "goal"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("site_settings").select("goal_percent").eq("id", true).single();
+      if (error) throw error;
+      return Number(data.goal_percent);
+    },
+  });
 
   const { data: assignedHospitals = [], isLoading: isLoadingAssignment } = useQuery({
     queryKey: ["current_hospital_assignments", isController],
@@ -146,6 +186,16 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
     },
   });
 
+  const selectedHospital = hospitals.find((hospital) => hospital.id === hospitalId);
+  const selectedHospitalName = selectedHospital ? `${selectedHospital.short_name} - ${selectedHospital.name}` : "";
+
+  useEffect(() => {
+    if (!selectedHospitalName) return;
+    setServiceRows((rows) => rows.map((row) => row.actionPlan.whereAction
+      ? row
+      : { ...row, actionPlan: { ...row.actionPlan, whereAction: selectedHospitalName } }));
+  }, [selectedHospitalName]);
+
   const resetForm = () => {
     setEditId(null);
     setHospitalId(isController && assignedHospitalIds.length > 0 ? assignedHospitalIds[0] : "");
@@ -182,10 +232,13 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
           throw new Error(`Já existe uma OS cadastrada para: ${labels}. Nenhuma ordem foi salva.`);
         }
 
-        const { error } = await supabase.from("service_orders").insert(payload);
-        if (error?.code === "23505") {
-          throw new Error("Uma destas ordens já foi cadastrada. Nenhuma ordem foi salva.");
-        }
+        const { error } = await supabase.rpc("create_service_orders_with_action_plans", {
+          _hospital_id: hospitalId,
+          _year: year,
+          _month: month,
+          _orders: payload,
+        });
+        if (error?.code === "23505") throw new Error("Uma destas ordens já foi cadastrada. Nenhuma ordem foi salva.");
         if (error) throw error;
       } else if (payload.id) {
         const { id, ...rest } = payload;
@@ -251,6 +304,21 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
         return;
       }
 
+      for (const row of parsedRows.data) {
+        const percentage = row.osAbertas > 0 ? (row.osFinalizadas / row.osAbertas) * 100 : 0;
+        const plan = row.actionPlan;
+        if (percentage < goalPercent && (!plan.whatAction.trim() || !plan.whyAction.trim() || !plan.whereAction.trim() || !plan.dueDate || !plan.responsible.trim() || !plan.howAction.trim())) {
+          const serviceLabel = SERVICE_TYPES.find((type) => type.id === row.serviceType)?.label || row.serviceType;
+          setFormError(`Preencha todos os campos obrigatórios do plano 5W2H de ${serviceLabel}.`);
+          return;
+        }
+        if (plan.estimatedCost && (!Number.isFinite(Number(plan.estimatedCost)) || Number(plan.estimatedCost) < 0)) {
+          const serviceLabel = SERVICE_TYPES.find((type) => type.id === row.serviceType)?.label || row.serviceType;
+          setFormError(`Informe um custo previsto válido no plano 5W2H de ${serviceLabel}.`);
+          return;
+        }
+      }
+
       const payload = parsedRows.data.map((row) => ({
         hospital_id: hospitalId,
         year,
@@ -261,6 +329,15 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
         acum_critico: row.acumCritico,
         acum_geral: row.acumGeral,
         analise_critica: row.analiseCritica || "—",
+        action_plan: {
+          what_action: row.actionPlan.whatAction,
+          why_action: row.actionPlan.whyAction,
+          where_action: row.actionPlan.whereAction,
+          due_date: row.actionPlan.dueDate,
+          responsible: row.actionPlan.responsible,
+          how_action: row.actionPlan.howAction,
+          estimated_cost: row.actionPlan.estimatedCost,
+        },
       }));
       upsertMutation.mutate(payload);
       return;
@@ -284,6 +361,13 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
   const updateServiceRow = <K extends keyof Omit<ServiceOrderRow, "id">>(id: string, field: K, value: ServiceOrderRow[K]) => {
     setFormError("");
     setServiceRows((rows) => rows.map((row) => row.id === id ? { ...row, [field]: value } : row));
+  };
+
+  const updateActionPlan = <K extends keyof ActionPlan>(id: string, field: K, value: ActionPlan[K]) => {
+    setFormError("");
+    setServiceRows((rows) => rows.map((row) => row.id === id
+      ? { ...row, actionPlan: { ...row.actionPlan, [field]: value } }
+      : row));
   };
 
   const addServiceRow = () => {
@@ -411,11 +495,40 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
                 </section>
                 <section className="space-y-3" aria-labelledby="critical-analysis-heading">
                   <h4 id="critical-analysis-heading" className="text-sm font-semibold text-foreground">Análise crítica por serviço</h4>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {serviceRows.map((row) => <div key={row.id} className="space-y-1">
-                      <Label>{SERVICE_TYPES.find((type) => type.id === row.serviceType)?.label}</Label>
-                      <Textarea maxLength={2000} value={row.analiseCritica} onChange={(e) => updateServiceRow(row.id, "analiseCritica", e.target.value)} placeholder="Registrar análise crítica..." rows={3} />
-                    </div>)}
+                  <div className="space-y-4">
+                    {serviceRows.map((row) => {
+                      const serviceLabel = SERVICE_TYPES.find((type) => type.id === row.serviceType)?.label || row.serviceType;
+                      const percentageValue = row.osAbertas > 0 ? (row.osFinalizadas / row.osAbertas) * 100 : 0;
+                      const requiresPlan = percentageValue < goalPercent;
+                      return <div key={row.id} className="space-y-3">
+                        <div className="space-y-1">
+                          <Label>{serviceLabel}</Label>
+                          <Textarea maxLength={2000} value={row.analiseCritica} onChange={(e) => updateServiceRow(row.id, "analiseCritica", e.target.value)} placeholder="Registrar análise crítica..." rows={3} />
+                        </div>
+                        {requiresPlan && <div className="space-y-4 rounded-md border border-destructive/40 bg-destructive/5 p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h5 className="text-sm font-semibold text-destructive">Plano de ação 5W2H obrigatório</h5>
+                            <span className="rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">Aberto</span>
+                          </div>
+                          <dl className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-5">
+                            <div><dt className="text-muted-foreground">Hospital</dt><dd className="font-medium text-foreground">{selectedHospitalName || "Selecione o hospital"}</dd></div>
+                            <div><dt className="text-muted-foreground">Ano e mês</dt><dd className="font-medium text-foreground">{MONTHS[month - 1]}/{year}</dd></div>
+                            <div><dt className="text-muted-foreground">Tipo de serviço</dt><dd className="font-medium text-foreground">{serviceLabel}</dd></div>
+                            <div><dt className="text-muted-foreground">Percentual atingido</dt><dd className="font-medium text-destructive">{percentageValue.toFixed(1)}%</dd></div>
+                            <div><dt className="text-muted-foreground">Meta definida</dt><dd className="font-medium text-foreground">{goalPercent}%</dd></div>
+                          </dl>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-1"><Label>O que será feito? *</Label><Textarea maxLength={2000} value={row.actionPlan.whatAction} onChange={(e) => updateActionPlan(row.id, "whatAction", e.target.value)} rows={2} /></div>
+                            <div className="space-y-1"><Label>Por que será feito? *</Label><Textarea maxLength={2000} value={row.actionPlan.whyAction} onChange={(e) => updateActionPlan(row.id, "whyAction", e.target.value)} rows={2} /></div>
+                            <div className="space-y-1"><Label>Onde? *</Label><Input maxLength={500} value={row.actionPlan.whereAction} onChange={(e) => updateActionPlan(row.id, "whereAction", e.target.value)} /></div>
+                            <div className="space-y-1"><Label>Quando? *</Label><Input type="date" value={row.actionPlan.dueDate} onChange={(e) => updateActionPlan(row.id, "dueDate", e.target.value)} /></div>
+                            <div className="space-y-1"><Label>Quem será o responsável? *</Label><Input maxLength={500} value={row.actionPlan.responsible} onChange={(e) => updateActionPlan(row.id, "responsible", e.target.value)} /></div>
+                            <div className="space-y-1"><Label>Quanto custará?</Label><Input type="number" min={0} step="0.01" placeholder="Custo previsto (opcional)" value={row.actionPlan.estimatedCost} onChange={(e) => updateActionPlan(row.id, "estimatedCost", e.target.value)} /></div>
+                            <div className="space-y-1 sm:col-span-2"><Label>Como será feito? *</Label><Textarea maxLength={2000} value={row.actionPlan.howAction} onChange={(e) => updateActionPlan(row.id, "howAction", e.target.value)} rows={2} /></div>
+                          </div>
+                        </div>}
+                      </div>;
+                    })}
                   </div>
                 </section>
               </>}
