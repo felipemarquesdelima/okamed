@@ -17,12 +17,12 @@ const SiteSettings = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("site_settings").select("goal_percent").eq("id", true).single();
       if (error) throw error;
-      return data;
+      return Number(data.goal_percent);
     },
   });
 
   useEffect(() => {
-    if (data) setGoal(Number(data.goal_percent));
+    if (data !== undefined) setGoal(data);
   }, [data]);
 
   const updateGoal = useMutation({
