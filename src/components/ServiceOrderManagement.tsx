@@ -59,7 +59,7 @@ const serviceOrderRowSchema = z.object({
   osFinalizadas: z.number().int().min(0).max(999999),
   acumCritico: z.number().int().min(0).max(999999),
   acumGeral: z.number().int().min(0).max(999999),
-  analiseCritica: z.string().trim().max(2000),
+  analiseCritica: z.string().trim().min(1).max(2000),
   actionPlan: z.object({
     whatAction: z.string().max(2000),
     whyAction: z.string().max(2000),
@@ -305,6 +305,11 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
       }
 
       for (const row of parsedRows.data) {
+        if (!row.analiseCritica.trim()) {
+          const serviceLabel = SERVICE_TYPES.find((type) => type.id === row.serviceType)?.label || row.serviceType;
+          setFormError(`Preencha a análise crítica de ${serviceLabel}.`);
+          return;
+        }
         const percentage = row.osAbertas > 0 ? (row.osFinalizadas / row.osAbertas) * 100 : 0;
         const plan = row.actionPlan;
         if (percentage < goalPercent && (!plan.whatAction.trim() || !plan.whyAction.trim() || !plan.whereAction.trim() || !plan.dueDate || !plan.responsible.trim() || !plan.howAction.trim())) {
@@ -328,7 +333,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
         os_finalizadas: row.osFinalizadas,
         acum_critico: row.acumCritico,
         acum_geral: row.acumGeral,
-        analise_critica: row.analiseCritica || "—",
+        analise_critica: row.analiseCritica.trim(),
         action_plan: {
           what_action: row.actionPlan.whatAction,
           why_action: row.actionPlan.whyAction,
@@ -502,8 +507,8 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
                       const requiresPlan = percentageValue < goalPercent;
                       return <div key={row.id} className="space-y-3">
                         <div className="space-y-1">
-                          <Label>{serviceLabel}</Label>
-                          <Textarea maxLength={2000} value={row.analiseCritica} onChange={(e) => updateServiceRow(row.id, "analiseCritica", e.target.value)} placeholder="Registrar análise crítica..." rows={3} />
+                           <Label>{serviceLabel} *</Label>
+                           <Textarea required maxLength={2000} value={row.analiseCritica} onChange={(e) => updateServiceRow(row.id, "analiseCritica", e.target.value)} placeholder="Registrar análise crítica..." rows={3} />
                         </div>
                         {requiresPlan && <div className="space-y-4 rounded-md border border-destructive/40 bg-destructive/5 p-4">
                           <div className="flex flex-wrap items-center justify-between gap-2">
