@@ -10,6 +10,7 @@ interface DashboardTabsProps {
   hospitalIds: string[];
   selectedServices: string[];
   dateRange: DateRange;
+  goalPercent: number;
 }
 
 const tabItems = [
@@ -23,7 +24,7 @@ const tabItems = [
   { value: "processos", label: "Processos" },
 ];
 
-const DashboardTabs = ({ data, hospitalIds, selectedServices, dateRange }: DashboardTabsProps) => {
+const DashboardTabs = ({ data, hospitalIds, selectedServices, dateRange, goalPercent }: DashboardTabsProps) => {
   return (
     <Tabs defaultValue="servicos" className="w-full">
 
@@ -43,8 +44,8 @@ const DashboardTabs = ({ data, hospitalIds, selectedServices, dateRange }: Dashb
       </div>
 
       <TabsContent value="servicos" className="mt-4 space-y-4">
-        <DashboardCharts selectedServices={selectedServices} hospitalIds={hospitalIds} dateRange={dateRange} />
-        <MonthlyTable data={data} />
+        <DashboardCharts selectedServices={selectedServices} hospitalIds={hospitalIds} dateRange={dateRange} goalPercent={goalPercent} />
+        <MonthlyTable data={data} goalPercent={goalPercent} />
       </TabsContent>
 
       {tabItems.slice(1).map((tab) => (

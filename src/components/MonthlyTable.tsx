@@ -6,9 +6,10 @@ import { Eye } from "lucide-react";
 
 interface MonthlyTableProps {
   data: MonthlyData[];
+  goalPercent: number;
 }
 
-const MonthlyTable = ({ data }: MonthlyTableProps) => {
+const MonthlyTable = ({ data, goalPercent }: MonthlyTableProps) => {
   const totals = {
     osAbertas: data.reduce((s, d) => s + d.osAbertas, 0),
     osFinalizadas: data.reduce((s, d) => s + d.osFinalizadas, 0),
@@ -43,7 +44,7 @@ const MonthlyTable = ({ data }: MonthlyTableProps) => {
                 <TableCell className="text-right">{row.osFinalizadas || "-"}</TableCell>
                 <TableCell className="text-right">
                   {row.osAbertas > 0 ? (
-                    <span className={row.percentual >= 90 ? "text-success font-medium" : "text-destructive font-medium"}>
+                    <span className={row.percentual >= goalPercent ? "text-success font-medium" : "text-destructive font-medium"}>
                       {row.percentual}%
                     </span>
                   ) : "N/A"}
@@ -76,7 +77,7 @@ const MonthlyTable = ({ data }: MonthlyTableProps) => {
               <TableCell className="text-right">{totals.osAbertas}</TableCell>
               <TableCell className="text-right">{totals.osFinalizadas}</TableCell>
               <TableCell className="text-right">{totalPerc}%</TableCell>
-              <TableCell className="text-right">90%</TableCell>
+               <TableCell className="text-right">{goalPercent}%</TableCell>
               <TableCell className="text-right">{totals.acumCritico}</TableCell>
               <TableCell className="text-right">{totals.acumGeral}</TableCell>
               <TableCell></TableCell>

@@ -66,6 +66,15 @@ const Index = () => {
 
   const hospitalKey = selectedHospitalIds.slice().sort().join(",");
 
+  const { data: goalPercent = 90 } = useQuery({
+    queryKey: ["site_settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("site_settings").select("goal_percent").eq("id", true).single();
+      if (error) throw error;
+      return Number(data.goal_percent);
+    },
+  });
+
   const { data: dbOrders = [] } = useQuery({
     queryKey: ["service_orders_dashboard", hospitalKey, selectedServices, rangeKey],
     queryFn: async () => {
@@ -111,7 +120,7 @@ const Index = () => {
         osAbertas: 0,
         osFinalizadas: 0,
         percentual: 0,
-        meta: 90,
+        meta: goalPercent,
         acumCritico: 0,
         acumGeral: 0,
         analiseCritica: "—",
@@ -121,7 +130,7 @@ const Index = () => {
     const osFinalizadas = monthOrders.reduce((s: number, o: any) => s + o.os_finalizadas, 0);
     const acumCritico = monthOrders.reduce((s: number, o: any) => s + o.acum_critico, 0);
     const acumGeral = monthOrders.reduce((s: number, o: any) => s + o.acum_geral, 0);
-    const meta = Number(monthOrders[0]?.meta || 90);
+    const meta = goalPercent;
     const percentual = osAbertas > 0 ? Math.round((osFinalizadas / osAbertas) * 1000) / 10 : 0;
     const analiseCritica = monthOrders.map((o: any) => o.analise_critica).filter((a: string) => a && a !== "—").join(" | ") || "—";
     return { month: monthName, osAbertas, osFinalizadas, percentual, meta, acumCritico, acumGeral, analiseCritica };
@@ -161,7 +170,7 @@ const Index = () => {
           taxaConclusao={stats.taxaConclusao}
           acumCritico={stats.acumCritico}
         />
-        <DashboardTabs data={monthlyData} hospitalIds={selectedHospitalIds} selectedServices={selectedServices} dateRange={dateRange} />
+        <DashboardTabs data={monthlyData} hospitalIds={selectedHospitalIds} selectedServices={selectedServices} dateRange={dateRange} goalPercent={goalPercent} />
         <AlertStatus acumCritico={stats.acumCritico} />
       </main>
     </div>

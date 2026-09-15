@@ -27,7 +27,6 @@ interface ServiceOrderRow {
   serviceType: ServiceType;
   osAbertas: number;
   osFinalizadas: number;
-  meta: number;
   acumCritico: number;
   acumGeral: number;
   analiseCritica: string;
@@ -37,7 +36,6 @@ const serviceOrderRowSchema = z.object({
   serviceType: z.enum(["corretiva", "preventiva", "calibracao", "eletrica"]),
   osAbertas: z.number().int().min(0).max(999999),
   osFinalizadas: z.number().int().min(0).max(999999),
-  meta: z.number().min(0).max(100),
   acumCritico: z.number().int().min(0).max(999999),
   acumGeral: z.number().int().min(0).max(999999),
   analiseCritica: z.string().trim().max(2000),
@@ -48,7 +46,6 @@ const createServiceRow = (serviceType: ServiceType = "corretiva"): ServiceOrderR
   serviceType,
   osAbertas: 0,
   osFinalizadas: 0,
-  meta: 90,
   acumCritico: 0,
   acumGeral: 0,
   analiseCritica: "",
@@ -68,7 +65,6 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
   const [serviceType, setServiceType] = useState("corretiva");
   const [osAbertas, setOsAbertas] = useState(0);
   const [osFinalizadas, setOsFinalizadas] = useState(0);
-  const [meta, setMeta] = useState(90);
   const [acumCritico, setAcumCritico] = useState(0);
   const [acumGeral, setAcumGeral] = useState(0);
   const [analiseCritica, setAnaliseCritica] = useState("—");
@@ -158,7 +154,6 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
     setServiceType("corretiva");
     setOsAbertas(0);
     setOsFinalizadas(0);
-    setMeta(90);
     setAcumCritico(0);
     setAcumGeral(0);
     setAnaliseCritica("—");
@@ -233,7 +228,6 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
     setServiceType(order.service_type);
     setOsAbertas(order.os_abertas);
     setOsFinalizadas(order.os_finalizadas);
-    setMeta(Number(order.meta));
     setAcumCritico(order.acum_critico);
     setAcumGeral(order.acum_geral);
     setAnaliseCritica(order.analise_critica || "—");
@@ -253,7 +247,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
 
       const parsedRows = z.array(serviceOrderRowSchema).min(1).max(SERVICE_TYPES.length).safeParse(serviceRows);
       if (!hospitalId || !Number.isInteger(year) || year < 2000 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12 || !parsedRows.success) {
-        setFormError("Revise os campos. Use valores válidos e não negativos; a meta deve estar entre 0 e 100.");
+        setFormError("Revise os campos e use valores válidos e não negativos.");
         return;
       }
 
@@ -264,7 +258,6 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
         service_type: row.serviceType,
         os_abertas: row.osAbertas,
         os_finalizadas: row.osFinalizadas,
-        meta: row.meta,
         acum_critico: row.acumCritico,
         acum_geral: row.acumGeral,
         analise_critica: row.analiseCritica || "—",
@@ -280,7 +273,6 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
       service_type: serviceType,
       os_abertas: osAbertas,
       os_finalizadas: osFinalizadas,
-      meta,
       acum_critico: acumCritico,
       acum_geral: acumGeral,
       analise_critica: analiseCritica,
@@ -375,7 +367,6 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
                   </div>
                   <div className="space-y-2"><Label>OS Abertas</Label><Input type="number" min={0} value={osAbertas} onChange={(e) => setOsAbertas(Number(e.target.value))} /></div>
                   <div className="space-y-2"><Label>OS Finalizadas</Label><Input type="number" min={0} value={osFinalizadas} onChange={(e) => setOsFinalizadas(Number(e.target.value))} /></div>
-                  <div className="space-y-2"><Label>Meta (%)</Label><Input type="number" min={0} max={100} value={meta} onChange={(e) => setMeta(Number(e.target.value))} /></div>
                   <div className="space-y-2"><Label>Percentual</Label><Input value={`${percentual}%`} disabled className="bg-muted" /></div>
                   <div className="space-y-2"><Label>Acum. Crítico</Label><Input type="number" min={0} value={acumCritico} onChange={(e) => setAcumCritico(Number(e.target.value))} /></div>
                   <div className="space-y-2"><Label>Acum. Geral</Label><Input type="number" min={0} value={acumGeral} onChange={(e) => setAcumGeral(Number(e.target.value))} /></div>
@@ -396,7 +387,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
                     {serviceRows.map((row) => {
                       const percentage = row.osAbertas > 0 ? ((row.osFinalizadas / row.osAbertas) * 100).toFixed(1) : "0.0";
                       const selectedByOthers = new Set(serviceRows.filter((item) => item.id !== row.id).map((item) => item.serviceType));
-                      return <div key={row.id} className="grid grid-cols-2 gap-3 rounded-md border p-3 sm:grid-cols-4 lg:grid-cols-[2fr_repeat(6,1fr)_auto]">
+                      return <div key={row.id} className="grid grid-cols-2 gap-3 rounded-md border p-3 sm:grid-cols-4 lg:grid-cols-[2fr_repeat(5,1fr)_auto]">
                         <div className="col-span-2 space-y-1 sm:col-span-4 lg:col-span-1">
                           <Label>Tipo de serviço</Label>
                           <Select value={row.serviceType} onValueChange={(value) => updateServiceRow(row.id, "serviceType", value as ServiceType)}>
@@ -406,7 +397,6 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
                         </div>
                         <div className="space-y-1"><Label>OS abertas</Label><Input type="number" min={0} max={999999} value={row.osAbertas} onChange={(e) => updateServiceRow(row.id, "osAbertas", Number(e.target.value))} /></div>
                         <div className="space-y-1"><Label>OS finalizadas</Label><Input type="number" min={0} max={999999} value={row.osFinalizadas} onChange={(e) => updateServiceRow(row.id, "osFinalizadas", Number(e.target.value))} /></div>
-                        <div className="space-y-1"><Label>Meta (%)</Label><Input type="number" min={0} max={100} value={row.meta} onChange={(e) => updateServiceRow(row.id, "meta", Number(e.target.value))} /></div>
                         <div className="space-y-1"><Label>Percentual</Label><Input value={`${percentage}%`} disabled className="bg-muted" /></div>
                         <div className="space-y-1"><Label>Acum. Crítico</Label><Input type="number" min={0} max={999999} value={row.acumCritico} onChange={(e) => updateServiceRow(row.id, "acumCritico", Number(e.target.value))} /></div>
                         <div className="space-y-1"><Label>Acum. Geral</Label><Input type="number" min={0} max={999999} value={row.acumGeral} onChange={(e) => updateServiceRow(row.id, "acumGeral", Number(e.target.value))} /></div>
