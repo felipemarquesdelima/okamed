@@ -74,6 +74,87 @@ export type Database = {
         }
         Relationships: []
       }
+      service_order_action_plans: {
+        Row: {
+          achieved_percent: number
+          created_at: string
+          created_by: string
+          due_date: string
+          estimated_cost: number | null
+          goal_percent: number
+          hospital_id: string
+          how_action: string
+          id: string
+          month: number
+          responsible: string
+          service_order_id: string
+          service_type: string
+          status: string
+          updated_at: string
+          what_action: string
+          where_action: string
+          why_action: string
+          year: number
+        }
+        Insert: {
+          achieved_percent: number
+          created_at?: string
+          created_by?: string
+          due_date: string
+          estimated_cost?: number | null
+          goal_percent: number
+          hospital_id: string
+          how_action: string
+          id?: string
+          month: number
+          responsible: string
+          service_order_id: string
+          service_type: string
+          status?: string
+          updated_at?: string
+          what_action: string
+          where_action: string
+          why_action: string
+          year: number
+        }
+        Update: {
+          achieved_percent?: number
+          created_at?: string
+          created_by?: string
+          due_date?: string
+          estimated_cost?: number | null
+          goal_percent?: number
+          hospital_id?: string
+          how_action?: string
+          id?: string
+          month?: number
+          responsible?: string
+          service_order_id?: string
+          service_type?: string
+          status?: string
+          updated_at?: string
+          what_action?: string
+          where_action?: string
+          why_action?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_action_plans_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_action_plans_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: true
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_orders: {
         Row: {
           acum_critico: number
@@ -236,6 +317,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_service_orders_with_action_plans: {
+        Args: {
+          _hospital_id: string
+          _month: number
+          _orders: Json
+          _year: number
+        }
+        Returns: string[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
