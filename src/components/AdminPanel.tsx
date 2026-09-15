@@ -1,14 +1,15 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, ClipboardList, Users } from "lucide-react";
+import { Building2, ClipboardList, Home, Users } from "lucide-react";
 import HospitalManagement from "./HospitalManagement";
 import ServiceOrderManagement from "./ServiceOrderManagement";
 import UserManagement from "./UserManagement";
 
 interface AdminPanelProps {
   userRole?: string;
+  onHome: () => void;
 }
 
-const AdminPanel = ({ userRole = "admin" }: AdminPanelProps) => {
+const AdminPanel = ({ userRole = "admin", onHome }: AdminPanelProps) => {
   const isAdmin = userRole === "admin";
   const defaultTab = isAdmin ? "hospitals" : "os-data";
 
@@ -16,6 +17,10 @@ const AdminPanel = ({ userRole = "admin" }: AdminPanelProps) => {
     <div className="bg-card rounded-xl p-5 stat-card-shadow">
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-4">
+          <TabsTrigger value="home" onClick={onHome} className="gap-1.5">
+            <Home className="h-4 w-4" />
+            Página inicial
+          </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="hospitals" className="gap-1.5">
               <Building2 className="h-4 w-4" />
