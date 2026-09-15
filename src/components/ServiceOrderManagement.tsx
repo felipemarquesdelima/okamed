@@ -59,7 +59,7 @@ const serviceOrderRowSchema = z.object({
   osFinalizadas: z.number().int().min(0).max(999999),
   acumCritico: z.number().int().min(0).max(999999),
   acumGeral: z.number().int().min(0).max(999999),
-  analiseCritica: z.string().trim().max(2000),
+  analiseCritica: z.string().trim().min(1).max(2000),
   actionPlan: z.object({
     whatAction: z.string().max(2000),
     whyAction: z.string().max(2000),
@@ -298,6 +298,13 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
         return;
       }
 
+      const rowWithoutCriticalAnalysis = serviceRows.find((row) => !row.analiseCritica.trim());
+      if (rowWithoutCriticalAnalysis) {
+        const serviceLabel = SERVICE_TYPES.find((type) => type.id === rowWithoutCriticalAnalysis.serviceType)?.label || rowWithoutCriticalAnalysis.serviceType;
+        setFormError(`Preencha a análise crítica de ${serviceLabel}.`);
+        return;
+      }
+
       const parsedRows = z.array(serviceOrderRowSchema).min(1).max(SERVICE_TYPES.length).safeParse(serviceRows);
       if (!hospitalId || !Number.isInteger(year) || year < 2000 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12 || !parsedRows.success) {
         setFormError("Revise os campos e use valores válidos e não negativos.");
@@ -328,7 +335,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
         os_finalizadas: row.osFinalizadas,
         acum_critico: row.acumCritico,
         acum_geral: row.acumGeral,
-        analise_critica: row.analiseCritica || "—",
+        analise_critica: row.analiseCritica.trim(),
         action_plan: {
           what_action: row.actionPlan.whatAction,
           why_action: row.actionPlan.whyAction,
@@ -502,8 +509,8 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
                       const requiresPlan = percentageValue < goalPercent;
                       return <div key={row.id} className="space-y-3">
                         <div className="space-y-1">
-                          <Label>{serviceLabel}</Label>
-                          <Textarea maxLength={2000} value={row.analiseCritica} onChange={(e) => updateServiceRow(row.id, "analiseCritica", e.target.value)} placeholder="Registrar análise crítica..." rows={3} />
+                           <Label>{serviceLabel} *</Label>
+                           <Textarea required maxLength={2000} value={row.analiseCritica} onChange={(e) => updateServiceRow(row.id, "analiseCritica", e.target.value)} placeholder="Registrar análise crítica..." rows={3} />
                         </div>
                         {requiresPlan && <div className="space-y-4 rounded-md border border-destructive/40 bg-destructive/5 p-4">
                           <div className="flex flex-wrap items-center justify-between gap-2">
