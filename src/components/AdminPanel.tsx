@@ -16,23 +16,23 @@ const AdminPanel = ({ userRole = "admin", onHome }: AdminPanelProps) => {
   return (
     <div className="bg-card rounded-xl p-5 stat-card-shadow">
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="home" onClick={onHome} className="gap-1.5">
+        <TabsList className="mb-4 max-w-full justify-start overflow-x-auto">
+          <TabsTrigger value="home" onClick={onHome} className="shrink-0 gap-1.5">
             <Home className="h-4 w-4" />
             Página inicial
           </TabsTrigger>
           {isAdmin && (
-            <TabsTrigger value="hospitals" className="gap-1.5">
+            <TabsTrigger value="hospitals" className="shrink-0 gap-1.5">
               <Building2 className="h-4 w-4" />
               Hospitais
             </TabsTrigger>
           )}
-          <TabsTrigger value="os-data" className="gap-1.5">
+          <TabsTrigger value="os-data" className="shrink-0 gap-1.5">
             <ClipboardList className="h-4 w-4" />
             Dados de OS
           </TabsTrigger>
           {isAdmin && (
-            <TabsTrigger value="users" className="gap-1.5">
+            <TabsTrigger value="users" className="shrink-0 gap-1.5">
               <Users className="h-4 w-4" />
               Usuários
             </TabsTrigger>
