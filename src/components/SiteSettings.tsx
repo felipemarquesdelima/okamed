@@ -13,7 +13,7 @@ const SiteSettings = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["site_settings"],
+    queryKey: ["site_settings", "goal"],
     queryFn: async () => {
       const { data, error } = await supabase.from("site_settings").select("goal_percent").eq("id", true).single();
       if (error) throw error;
@@ -32,7 +32,7 @@ const SiteSettings = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["site_settings"] });
+      queryClient.invalidateQueries({ queryKey: ["site_settings", "goal"] });
       queryClient.invalidateQueries({ queryKey: ["service_orders"] });
       queryClient.invalidateQueries({ queryKey: ["service_orders_dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["service_orders_charts"] });

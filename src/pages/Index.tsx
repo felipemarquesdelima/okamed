@@ -67,7 +67,7 @@ const Index = () => {
   const hospitalKey = selectedHospitalIds.slice().sort().join(",");
 
   const { data: goalPercent = 90 } = useQuery({
-    queryKey: ["site_settings"],
+    queryKey: ["site_settings", "goal"],
     queryFn: async () => {
       const { data, error } = await supabase.from("site_settings").select("goal_percent").eq("id", true).single();
       if (error) throw error;
