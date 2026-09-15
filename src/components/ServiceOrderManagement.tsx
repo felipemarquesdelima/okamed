@@ -396,7 +396,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
                     {serviceRows.map((row) => {
                       const percentage = row.osAbertas > 0 ? ((row.osFinalizadas / row.osAbertas) * 100).toFixed(1) : "0.0";
                       const selectedByOthers = new Set(serviceRows.filter((item) => item.id !== row.id).map((item) => item.serviceType));
-                      return <div key={row.id} className="grid grid-cols-2 gap-3 rounded-md border p-3 sm:grid-cols-4 lg:grid-cols-[2fr_repeat(5,1fr)_auto]">
+                      return <div key={row.id} className="grid grid-cols-2 gap-3 rounded-md border p-3 sm:grid-cols-4 lg:grid-cols-[2fr_repeat(6,1fr)_auto]">
                         <div className="col-span-2 space-y-1 sm:col-span-4 lg:col-span-1">
                           <Label>Tipo de serviço</Label>
                           <Select value={row.serviceType} onValueChange={(value) => updateServiceRow(row.id, "serviceType", value as ServiceType)}>
