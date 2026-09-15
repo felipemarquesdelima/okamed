@@ -10,9 +10,10 @@ interface DashboardChartsProps {
   selectedServices: string[];
   hospitalIds: string[];
   dateRange: DateRange;
+  goalPercent: number;
 }
 
-const DashboardCharts = ({ selectedServices, hospitalIds, dateRange }: DashboardChartsProps) => {
+const DashboardCharts = ({ selectedServices, hospitalIds, dateRange, goalPercent }: DashboardChartsProps) => {
   const rangeActive = isRangeActive(dateRange);
   const rangeKey = rangeActive ? `${dateRange.from!.toISOString()}_${dateRange.to!.toISOString()}` : "";
   const hospitalKey = hospitalIds.slice().sort().join(",");
@@ -99,7 +100,7 @@ const DashboardCharts = ({ selectedServices, hospitalIds, dateRange }: Dashboard
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-card rounded-xl p-5 stat-card-shadow flex flex-col">
           <h3 className="text-base font-semibold text-foreground mb-1">{lineTitle}</h3>
-          <p className="text-xs text-muted-foreground mb-4">Evolução mensal — meta 90%</p>
+          <p className="text-xs text-muted-foreground mb-4">Evolução mensal — meta {goalPercent}%</p>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={lineData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -107,10 +108,10 @@ const DashboardCharts = ({ selectedServices, hospitalIds, dateRange }: Dashboard
               <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} domain={[0, 110]} tickFormatter={(v) => `${v}%`} />
               <Tooltip formatter={(v: any) => (v == null ? "—" : `${v}%`)} />
               <ReferenceLine
-                y={90}
+                y={goalPercent}
                 stroke="hsl(var(--success))"
                 strokeDasharray="8 4"
-                label={{ value: "Meta 90%", fill: "hsl(var(--success))", fontSize: 11 }}
+                label={{ value: `Meta ${goalPercent}%`, fill: "hsl(var(--success))", fontSize: 11 }}
               />
               <Line
                 type="monotone"

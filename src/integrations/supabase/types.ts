@@ -130,6 +130,24 @@ export type Database = {
           },
         ]
       }
+      site_settings: {
+        Row: {
+          goal_percent: number
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          goal_percent?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          goal_percent?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_audit_logs: {
         Row: {
           action: string

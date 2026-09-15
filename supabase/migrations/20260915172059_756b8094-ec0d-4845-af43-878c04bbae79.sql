@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.apply_global_goal_to_service_order() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.sync_global_goal_to_service_orders() FROM PUBLIC, anon, authenticated;

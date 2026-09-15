@@ -1,8 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, ClipboardList, Home, Users } from "lucide-react";
+import { Building2, ClipboardList, Home, Settings, Users } from "lucide-react";
 import HospitalManagement from "./HospitalManagement";
 import ServiceOrderManagement from "./ServiceOrderManagement";
 import UserManagement from "./UserManagement";
+import SiteSettings from "./SiteSettings";
 
 interface AdminPanelProps {
   userRole?: string;
@@ -37,6 +38,12 @@ const AdminPanel = ({ userRole = "admin", onHome }: AdminPanelProps) => {
               Usuários
             </TabsTrigger>
           )}
+          {isAdmin && (
+            <TabsTrigger value="settings" className="shrink-0 gap-1.5">
+              <Settings className="h-4 w-4" />
+              Configurações
+            </TabsTrigger>
+          )}
         </TabsList>
         {isAdmin && (
           <TabsContent value="hospitals">
@@ -49,6 +56,11 @@ const AdminPanel = ({ userRole = "admin", onHome }: AdminPanelProps) => {
         {isAdmin && (
           <TabsContent value="users">
             <UserManagement />
+          </TabsContent>
+        )}
+        {isAdmin && (
+          <TabsContent value="settings">
+            <SiteSettings />
           </TabsContent>
         )}
       </Tabs>
