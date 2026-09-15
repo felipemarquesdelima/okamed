@@ -34,6 +34,27 @@ export interface MonthlyData {
   acumCritico: number;
   acumGeral: number;
   analiseCritica: string;
+  serviceDetails?: MonthlyServiceDetail[];
+}
+
+export interface ActionPlan5W2H {
+  achievedPercent: number;
+  goalPercent: number;
+  status: string;
+  whatAction: string;
+  whyAction: string;
+  whereAction: string;
+  dueDate: string;
+  responsible: string;
+  howAction: string;
+  estimatedCost: number | null;
+}
+
+export interface MonthlyServiceDetail {
+  serviceOrderId: string;
+  serviceType: string;
+  analiseCritica: string;
+  actionPlan?: ActionPlan5W2H;
 }
 
 export function getMonthlyData(hospitalId: string): MonthlyData[] {

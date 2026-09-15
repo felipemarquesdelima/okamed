@@ -95,6 +95,21 @@ const Index = () => {
     },
   });
 
+  const serviceOrderIds = dbOrders.map((order) => order.id);
+  const serviceOrderIdsKey = serviceOrderIds.slice().sort().join(",");
+  const { data: actionPlans = [] } = useQuery({
+    queryKey: ["service_order_action_plans_dashboard", serviceOrderIdsKey],
+    enabled: !!session && serviceOrderIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("service_order_action_plans")
+        .select("service_order_id, achieved_percent, goal_percent, status, what_action, why_action, where_action, due_date, responsible, how_action, estimated_cost")
+        .in("service_order_id", serviceOrderIds);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -133,7 +148,29 @@ const Index = () => {
     const meta = goalPercent;
     const percentual = osAbertas > 0 ? Math.round((osFinalizadas / osAbertas) * 1000) / 10 : 0;
     const analiseCritica = monthOrders.map((o: any) => o.analise_critica).filter((a: string) => a && a !== "—").join(" | ") || "—";
-    return { month: monthName, osAbertas, osFinalizadas, percentual, meta, acumCritico, acumGeral, analiseCritica };
+    const serviceDetails = monthOrders
+      .filter((order) => order.analise_critica && order.analise_critica !== "—")
+      .map((order) => {
+        const plan = actionPlans.find((item) => item.service_order_id === order.id);
+        return {
+          serviceOrderId: order.id,
+          serviceType: order.service_type,
+          analiseCritica: order.analise_critica || "—",
+          actionPlan: plan ? {
+            achievedPercent: Number(plan.achieved_percent),
+            goalPercent: Number(plan.goal_percent),
+            status: plan.status,
+            whatAction: plan.what_action,
+            whyAction: plan.why_action,
+            whereAction: plan.where_action,
+            dueDate: plan.due_date,
+            responsible: plan.responsible,
+            howAction: plan.how_action,
+            estimatedCost: plan.estimated_cost === null ? null : Number(plan.estimated_cost),
+          } : undefined,
+        };
+      });
+    return { month: monthName, osAbertas, osFinalizadas, percentual, meta, acumCritico, acumGeral, analiseCritica, serviceDetails };
   });
 
   const activeMonths = monthlyData.filter(d => d.osAbertas > 0);
