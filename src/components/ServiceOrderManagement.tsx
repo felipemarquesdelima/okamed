@@ -298,6 +298,13 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
         return;
       }
 
+      const rowWithoutCriticalAnalysis = serviceRows.find((row) => !row.analiseCritica.trim());
+      if (rowWithoutCriticalAnalysis) {
+        const serviceLabel = SERVICE_TYPES.find((type) => type.id === rowWithoutCriticalAnalysis.serviceType)?.label || rowWithoutCriticalAnalysis.serviceType;
+        setFormError(`Preencha a análise crítica de ${serviceLabel}.`);
+        return;
+      }
+
       const parsedRows = z.array(serviceOrderRowSchema).min(1).max(SERVICE_TYPES.length).safeParse(serviceRows);
       if (!hospitalId || !Number.isInteger(year) || year < 2000 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12 || !parsedRows.success) {
         setFormError("Revise os campos e use valores válidos e não negativos.");
@@ -305,11 +312,6 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
       }
 
       for (const row of parsedRows.data) {
-        if (!row.analiseCritica.trim()) {
-          const serviceLabel = SERVICE_TYPES.find((type) => type.id === row.serviceType)?.label || row.serviceType;
-          setFormError(`Preencha a análise crítica de ${serviceLabel}.`);
-          return;
-        }
         const percentage = row.osAbertas > 0 ? (row.osFinalizadas / row.osAbertas) * 100 : 0;
         const plan = row.actionPlan;
         if (percentage < goalPercent && (!plan.whatAction.trim() || !plan.whyAction.trim() || !plan.whereAction.trim() || !plan.dueDate || !plan.responsible.trim() || !plan.howAction.trim())) {
