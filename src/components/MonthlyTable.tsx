@@ -2,7 +2,10 @@ import { MonthlyData } from "@/lib/mockData";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Eye, ListChecks } from "lucide-react";
+import { serviceTypes } from "@/lib/mockData";
 
 interface MonthlyTableProps {
   data: MonthlyData[];
@@ -10,6 +13,15 @@ interface MonthlyTableProps {
 }
 
 const MonthlyTable = ({ data, goalPercent }: MonthlyTableProps) => {
+  const getServiceLabel = (serviceType: string) =>
+    serviceTypes.find((service) => service.id === serviceType)?.label || serviceType;
+
+  const formatDate = (date: string) => new Intl.DateTimeFormat("pt-BR").format(new Date(`${date}T12:00:00`));
+
+  const formatCost = (cost: number | null) => cost === null
+    ? "Não informado"
+    : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cost);
+
   const totals = {
     osAbertas: data.reduce((s, d) => s + d.osAbertas, 0),
     osFinalizadas: data.reduce((s, d) => s + d.osFinalizadas, 0),
@@ -61,11 +73,68 @@ const MonthlyTable = ({ data, goalPercent }: MonthlyTableProps) => {
                           Ver
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-lg max-h-[70vh] overflow-y-auto">
+                      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Análise Crítica - {row.month}</DialogTitle>
+                          <DialogTitle>Análise crítica e plano 5W2H — {row.month}</DialogTitle>
                         </DialogHeader>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{row.analiseCritica}</p>
+                        <div className="space-y-4">
+                          {row.serviceDetails?.length ? row.serviceDetails.map((detail) => (
+                            <section key={detail.serviceOrderId} className="rounded-lg border bg-card p-4 space-y-4">
+                              <div>
+                                <p className="text-xs font-medium uppercase text-muted-foreground">Serviço</p>
+                                <h4 className="text-sm font-semibold text-foreground">{getServiceLabel(detail.serviceType)}</h4>
+                              </div>
+                              <div>
+                                <h5 className="text-sm font-semibold text-foreground mb-1">Análise crítica</h5>
+                                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{detail.analiseCritica}</p>
+                              </div>
+
+                              {detail.actionPlan && (
+                                <>
+                                  <Separator />
+                                  <div className="space-y-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <ListChecks className="h-4 w-4 text-primary" />
+                                        <h5 className="text-sm font-semibold text-foreground">Plano de ação 5W2H</h5>
+                                      </div>
+                                      <Badge variant="outline" className="capitalize">{detail.actionPlan.status}</Badge>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                      <div>
+                                        <p className="text-xs text-muted-foreground">Percentual atingido</p>
+                                        <p className="text-sm font-semibold text-destructive">{detail.actionPlan.achievedPercent}%</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-muted-foreground">Meta</p>
+                                        <p className="text-sm font-semibold text-foreground">{detail.actionPlan.goalPercent}%</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-muted-foreground">Prazo</p>
+                                        <p className="text-sm font-medium text-foreground">{formatDate(detail.actionPlan.dueDate)}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-muted-foreground">Custo previsto</p>
+                                        <p className="text-sm font-medium text-foreground">{formatCost(detail.actionPlan.estimatedCost)}</p>
+                                      </div>
+                                    </div>
+
+                                    <dl className="grid gap-3 sm:grid-cols-2">
+                                      <div><dt className="text-xs font-medium text-muted-foreground">O que será feito?</dt><dd className="text-sm text-foreground whitespace-pre-wrap">{detail.actionPlan.whatAction}</dd></div>
+                                      <div><dt className="text-xs font-medium text-muted-foreground">Por que será feito?</dt><dd className="text-sm text-foreground whitespace-pre-wrap">{detail.actionPlan.whyAction}</dd></div>
+                                      <div><dt className="text-xs font-medium text-muted-foreground">Onde?</dt><dd className="text-sm text-foreground whitespace-pre-wrap">{detail.actionPlan.whereAction}</dd></div>
+                                      <div><dt className="text-xs font-medium text-muted-foreground">Quem será o responsável?</dt><dd className="text-sm text-foreground whitespace-pre-wrap">{detail.actionPlan.responsible}</dd></div>
+                                      <div className="sm:col-span-2"><dt className="text-xs font-medium text-muted-foreground">Como será feito?</dt><dd className="text-sm text-foreground whitespace-pre-wrap">{detail.actionPlan.howAction}</dd></div>
+                                    </dl>
+                                  </div>
+                                </>
+                              )}
+                            </section>
+                          )) : (
+                            <p className="text-sm text-muted-foreground leading-relaxed">{row.analiseCritica}</p>
+                          )}
+                        </div>
                       </DialogContent>
                     </Dialog>
                   ) : "—"}
