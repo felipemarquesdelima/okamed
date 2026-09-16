@@ -59,7 +59,7 @@ const serviceOrderRowSchema = z.object({
   osFinalizadas: z.number().int().min(0).max(999999),
   acumCritico: z.number().int().min(0).max(999999),
   acumGeral: z.number().int().min(0).max(999999),
-  analiseCritica: z.string().trim().min(1).max(2000),
+  analiseCritica: z.string().trim().max(2000),
   actionPlan: z.object({
     whatAction: z.string().max(2000),
     whyAction: z.string().max(2000),
@@ -87,6 +87,7 @@ interface ServiceOrderManagementProps {
 }
 
 const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementProps) => {
+  const isAdmin = userRole === "admin";
   const isController = userRole === "controlador";
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -299,7 +300,7 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
       }
 
       const rowWithoutCriticalAnalysis = serviceRows.find((row) => !row.analiseCritica.trim());
-      if (rowWithoutCriticalAnalysis) {
+      if (!isAdmin && rowWithoutCriticalAnalysis) {
         const serviceLabel = SERVICE_TYPES.find((type) => type.id === rowWithoutCriticalAnalysis.serviceType)?.label || rowWithoutCriticalAnalysis.serviceType;
         setFormError(`Preencha a análise crítica de ${serviceLabel}.`);
         return;
@@ -314,7 +315,16 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
       for (const row of parsedRows.data) {
         const percentage = row.osAbertas > 0 ? (row.osFinalizadas / row.osAbertas) * 100 : 0;
         const plan = row.actionPlan;
-        if (percentage < goalPercent && (!plan.whatAction.trim() || !plan.whyAction.trim() || !plan.whereAction.trim() || !plan.dueDate || !plan.responsible.trim() || !plan.howAction.trim())) {
+        const hasAnyPlanContent = Boolean(
+          plan.whatAction.trim()
+          || plan.whyAction.trim()
+          || plan.dueDate
+          || plan.responsible.trim()
+          || plan.howAction.trim()
+          || plan.estimatedCost.trim()
+        );
+        const hasIncompletePlan = !plan.whatAction.trim() || !plan.whyAction.trim() || !plan.whereAction.trim() || !plan.dueDate || !plan.responsible.trim() || !plan.howAction.trim();
+        if (percentage < goalPercent && hasIncompletePlan && (!isAdmin || hasAnyPlanContent)) {
           const serviceLabel = SERVICE_TYPES.find((type) => type.id === row.serviceType)?.label || row.serviceType;
           setFormError(`Preencha todos os campos obrigatórios do plano 5W2H de ${serviceLabel}.`);
           return;
@@ -509,12 +519,12 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
                       const requiresPlan = percentageValue < goalPercent;
                       return <div key={row.id} className="space-y-3">
                         <div className="space-y-1">
-                           <Label>{serviceLabel} *</Label>
-                           <Textarea required maxLength={2000} value={row.analiseCritica} onChange={(e) => updateServiceRow(row.id, "analiseCritica", e.target.value)} placeholder="Registrar análise crítica..." rows={3} />
+                            <Label>{serviceLabel}{isAdmin ? " (opcional)" : " *"}</Label>
+                            <Textarea required={!isAdmin} maxLength={2000} value={row.analiseCritica} onChange={(e) => updateServiceRow(row.id, "analiseCritica", e.target.value)} placeholder="Registrar análise crítica..." rows={3} />
                         </div>
                         {requiresPlan && <div className="space-y-4 rounded-md border border-destructive/40 bg-destructive/5 p-4">
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h5 className="text-sm font-semibold text-destructive">Plano de ação 5W2H obrigatório</h5>
+                             <h5 className="text-sm font-semibold text-destructive">Plano de ação 5W2H {isAdmin ? "opcional" : "obrigatório"}</h5>
                             <span className="rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">Aberto</span>
                           </div>
                           <dl className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-5">
