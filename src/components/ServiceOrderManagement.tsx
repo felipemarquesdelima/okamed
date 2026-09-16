@@ -535,13 +535,13 @@ const ServiceOrderManagement = ({ userRole = "admin" }: ServiceOrderManagementPr
                             <div><dt className="text-muted-foreground">Meta definida</dt><dd className="font-medium text-foreground">{goalPercent}%</dd></div>
                           </dl>
                           <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-1"><Label>O que será feito? *</Label><Textarea maxLength={2000} value={row.actionPlan.whatAction} onChange={(e) => updateActionPlan(row.id, "whatAction", e.target.value)} rows={2} /></div>
-                            <div className="space-y-1"><Label>Por que será feito? *</Label><Textarea maxLength={2000} value={row.actionPlan.whyAction} onChange={(e) => updateActionPlan(row.id, "whyAction", e.target.value)} rows={2} /></div>
-                            <div className="space-y-1"><Label>Onde? *</Label><Input maxLength={500} value={row.actionPlan.whereAction} onChange={(e) => updateActionPlan(row.id, "whereAction", e.target.value)} /></div>
-                            <div className="space-y-1"><Label>Quando? *</Label><Input type="date" value={row.actionPlan.dueDate} onChange={(e) => updateActionPlan(row.id, "dueDate", e.target.value)} /></div>
-                            <div className="space-y-1"><Label>Quem será o responsável? *</Label><Input maxLength={500} value={row.actionPlan.responsible} onChange={(e) => updateActionPlan(row.id, "responsible", e.target.value)} /></div>
+                             <div className="space-y-1"><Label>O que será feito?{isAdmin ? "" : " *"}</Label><Textarea maxLength={2000} value={row.actionPlan.whatAction} onChange={(e) => updateActionPlan(row.id, "whatAction", e.target.value)} rows={2} /></div>
+                             <div className="space-y-1"><Label>Por que será feito?{isAdmin ? "" : " *"}</Label><Textarea maxLength={2000} value={row.actionPlan.whyAction} onChange={(e) => updateActionPlan(row.id, "whyAction", e.target.value)} rows={2} /></div>
+                             <div className="space-y-1"><Label>Onde?{isAdmin ? "" : " *"}</Label><Input maxLength={500} value={row.actionPlan.whereAction} onChange={(e) => updateActionPlan(row.id, "whereAction", e.target.value)} /></div>
+                             <div className="space-y-1"><Label>Quando?{isAdmin ? "" : " *"}</Label><Input type="date" value={row.actionPlan.dueDate} onChange={(e) => updateActionPlan(row.id, "dueDate", e.target.value)} /></div>
+                             <div className="space-y-1"><Label>Quem será o responsável?{isAdmin ? "" : " *"}</Label><Input maxLength={500} value={row.actionPlan.responsible} onChange={(e) => updateActionPlan(row.id, "responsible", e.target.value)} /></div>
                             <div className="space-y-1"><Label>Quanto custará?</Label><Input type="number" min={0} step="0.01" placeholder="Custo previsto (opcional)" value={row.actionPlan.estimatedCost} onChange={(e) => updateActionPlan(row.id, "estimatedCost", e.target.value)} /></div>
-                            <div className="space-y-1 sm:col-span-2"><Label>Como será feito? *</Label><Textarea maxLength={2000} value={row.actionPlan.howAction} onChange={(e) => updateActionPlan(row.id, "howAction", e.target.value)} rows={2} /></div>
+                             <div className="space-y-1 sm:col-span-2"><Label>Como será feito?{isAdmin ? "" : " *"}</Label><Textarea maxLength={2000} value={row.actionPlan.howAction} onChange={(e) => updateActionPlan(row.id, "howAction", e.target.value)} rows={2} /></div>
                           </div>
                         </div>}
                       </div>;
